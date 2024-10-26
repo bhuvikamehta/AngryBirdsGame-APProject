@@ -2,7 +2,9 @@
 
 # About Game
 This project is a static GUI-based implementation of the classic **Angry Birds** game. 
-GitHub link- 
+
+GitHub link- https://github.com/bhuvikamehta/AngryBirdsGame-APProject
+
 Group Members-
 Bhuvika Mehta (2023172)
 Simar Ahi (2023527)
