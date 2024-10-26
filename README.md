@@ -13,3 +13,7 @@ Simar Ahi (2023527)
 Go to main page of this repository, click the green code button to copy the repository's URL . Copy the https link. Make sure you have IntellijIDEA installed on your system. Launch IDE. On the Welcome screen, click on Get from VCS. In the dialog that appears, select Git from the dropdown. Enter the repository URL copied before in the URL field. Choose a local directory where you want to clone the repository. Click Clone.
 
 Now to run the main code for static gui, you have to run the **Lwjgl3Launcher.java** file for which you have to chngne your directory to **lwjgl3** and go in **src/main ** folder to locate the file under **java/io/github/AngryBirdsGame**. 
+
+# Resources
+All assets including icons and images have either been taken from www.google.com or edited/created on www.canva.com .
+All sounds have been taken from https://www.myinstants.com/en/search/?name=angry+birds#google_vignette
