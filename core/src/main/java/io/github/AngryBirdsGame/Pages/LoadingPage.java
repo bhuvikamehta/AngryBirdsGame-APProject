@@ -12,6 +12,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.Color;
 import io.github.AngryBirdsGame.AngryBirds;
 
+//import io.github.AngryBirdsGame.AngryBirds.offline.StoryMode;
+//import org.angrypigs.game.online.JoinGame;
+
 public class LoadingPage implements Screen{
     private AngryBirds game;
     private SpriteBatch batch;
@@ -20,8 +23,10 @@ public class LoadingPage implements Screen{
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
     private float loadingTime = 3f;
+    //setting bar dimensions
     private static final int BAR_WIDTH = 300;
     private static final int BAR_HEIGHT = 20;
+   // private static final int BAR_SPACING = 80;
 
     public LoadingPage(AngryBirds angrybirdsgame){
         this.game=angrybirdsgame;
@@ -33,6 +38,8 @@ public class LoadingPage implements Screen{
         font.setColor(Color.BLACK);
         bgSprite.setSize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         bgSprite.setPosition(0, 0);
+
+
     }
 
 
@@ -47,6 +54,7 @@ public class LoadingPage implements Screen{
         timeElapsed += v;
         float progress = Math.min(timeElapsed / loadingTime, 1);
 
+        // Clear the screen and draw the loading page
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
