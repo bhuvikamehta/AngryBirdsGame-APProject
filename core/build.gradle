@@ -1,0 +1,15 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+
+  //added these 2
+//  implementation "com.badlogic.gdx:gdx-backend-lwjgl3:1.12.0"
+//  implementation "com.badlogic.gdx:gdx-platform:1.12.0:natives-desktop"
+
+  if(enableGraalNative == 'true') {
+    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+  }
+}
