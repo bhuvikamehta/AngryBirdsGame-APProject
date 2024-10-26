@@ -3,7 +3,7 @@ package io.github.AngryBirdsGame.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import io.github.AngryBirdsGame.AngryBirds;
-import io.github.AngryBirdsGame.Main;
+//import io.github.AngryBirdsGame.Main;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
