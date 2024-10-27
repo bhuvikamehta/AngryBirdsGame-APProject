@@ -22,24 +22,27 @@ public class WinPage implements Screen{
     private final Music music_buff;
     private final Music icon_sound;
     private boolean snd = true;
-    private float touchCooldown = 0.5f;  
-    private float lastTouchTime = 0; 
+    private float touchCooldown = 0.5f;  // 0.5 seconds cooldown
+    private float lastTouchTime = 0;  // Track last touch time
     private OrthographicCamera camera;
 
     public WinPage(AngryBirds angrybirdsgame){
         this.game=angrybirdsgame;
         this.batch=new SpriteBatch();
 
+        // Initialize camera
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        Texture bgTexture = new Texture(Gdx.files.internal("Images/wbg.png"));
-        Texture nextLevelIcon = new Texture(Gdx.files.internal("Images/n_new.png"));
-        Texture goToLevelsIcon = new Texture(Gdx.files.internal("Images/gotolevelsICON.png"));
-        Texture exitIcon = new Texture(Gdx.files.internal("Images/exitgameICON.png"));
+        Texture bgTexture = new Texture(Gdx.files.internal("Images/winpg.png"));
+        Texture nextLevelIcon = new Texture(Gdx.files.internal("Images/nextlevel-win.png"));
+        Texture goToLevelsIcon = new Texture(Gdx.files.internal("Images/gotoLevels-win.png"));
+        Texture exitIcon = new Texture(Gdx.files.internal("Images/exit-win.png"));
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("assets/Sounds/win.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
 
+//        music_buff.setLooping(true);
+//        if(!music_buff.isPlaying())
             music_buff.play();
 
         bgSprite = new Sprite(bgTexture);
@@ -47,13 +50,13 @@ public class WinPage implements Screen{
         goToLevels = new Sprite(goToLevelsIcon);
         exit = new Sprite(exitIcon);
 
-        nextLevel.setScale(0.7f);
-        goToLevels.setScale(1f);
-        exit.setScale(1f);
+        nextLevel.setScale(0.85f);
+        goToLevels.setScale(0.85f);
+        exit.setScale(0.85f);
 
-        nextLevel.setPosition(230,145);
-        goToLevels.setPosition(125,100);
-        exit.setPosition(150,20);
+        nextLevel.setPosition(220,320);
+        goToLevels.setPosition(220,250);
+        exit.setPosition(220,180);
     }
 
     @Override
@@ -66,6 +69,7 @@ public class WinPage implements Screen{
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // Update camera
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
@@ -78,12 +82,13 @@ public class WinPage implements Screen{
 
         float touchX = Gdx.input.getX();
         float touchY = Gdx.graphics.getHeight() - Gdx.input.getY();
-        
+// Handle touch input
         if (Gdx.input.justTouched()) {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
 
+            // Check each sprite's bounds
             if (nextLevel.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                music_buff.stop();
                 playSound();
@@ -111,7 +116,7 @@ public class WinPage implements Screen{
 
     private void handleButtonClick(Runnable action) {
         if (snd) {
-            icon_sound.play();  
+            icon_sound.play();  // Play sound once per tap
             snd = false;
         }
         action.run();
@@ -147,6 +152,8 @@ public class WinPage implements Screen{
         nextLevel.getTexture().dispose();
         goToLevels.getTexture().dispose();
         exit.getTexture().dispose();
+
+
 
     }
 }
