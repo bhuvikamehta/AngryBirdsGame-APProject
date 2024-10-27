@@ -36,10 +36,10 @@ public class LosePage implements Screen{
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        Texture bgTexture = new Texture(Gdx.files.internal("Images/lbg.png"));
-        Texture tryAgainIcon = new Texture(Gdx.files.internal("Images/restart.png"));
-        Texture goToLevelsIcon = new Texture(Gdx.files.internal("Images/gotolevelsICON.png"));
-        Texture exitIcon = new Texture(Gdx.files.internal("Images/exitgameICON.png"));
+        Texture bgTexture = new Texture(Gdx.files.internal("Images/losepg.png"));
+        Texture tryAgainIcon = new Texture(Gdx.files.internal("Images/retry-lose.png"));
+        Texture goToLevelsIcon = new Texture(Gdx.files.internal("Images/gotoLevels-lose.png"));
+        Texture exitIcon = new Texture(Gdx.files.internal("Images/exit-lose.png"));
 
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("Sounds/lose.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
@@ -53,13 +53,13 @@ public class LosePage implements Screen{
         goToLevels = new Sprite(goToLevelsIcon);
         exit = new Sprite(exitIcon);
 
-        tryAgain.setScale(0.42f);
-        goToLevels.setScale(1f);
-        exit.setScale(1f);
+        tryAgain.setScale(0.85f);
+        goToLevels.setScale(0.85f);
+        exit.setScale(0.85f);
 
-        tryAgain.setPosition(200,125);
-        goToLevels.setPosition(130,100);
-        exit.setPosition(150,20);
+        tryAgain.setPosition(210,340);
+        goToLevels.setPosition(220,270);
+        exit.setPosition(220,190);
 
     }
 
