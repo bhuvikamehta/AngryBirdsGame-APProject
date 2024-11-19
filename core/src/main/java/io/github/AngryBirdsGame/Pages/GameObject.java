@@ -117,8 +117,9 @@ public abstract class GameObject {
 
     public void dispose() {
         objectSprite.getTexture().dispose();
-
-
+        if (body!=null) {
+            world.destroyBody(body);
+        }
 
     }
 
