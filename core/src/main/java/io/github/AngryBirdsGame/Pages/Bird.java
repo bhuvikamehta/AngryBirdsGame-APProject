@@ -15,7 +15,7 @@ public class Bird extends GameObject {
         objectSprite.setScale(scale);
         objectSprite.setPosition(posX, posY);
         createBody(BodyDef.BodyType.DynamicBody); // DynamicBody for gravity simulation
-        createCircleFixture(1.0f, 1.0f, 0.2f); // Adjust density, friction, and restitution
+        createCircleFixture(1.0f, 1.0f, 0.5f); // Adjust density, friction, and restitution
     }
 
     @Override
