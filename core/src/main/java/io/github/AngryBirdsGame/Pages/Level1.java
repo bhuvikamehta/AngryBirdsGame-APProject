@@ -30,6 +30,8 @@ public class Level1 implements Screen {
     private float lastTouchTime = 0;
     private OrthographicCamera camera;
     private World world;
+    protected static final float PIXELS_TO_METERS = 100f;
+
 
     public Level1(AngryBirds game) {
         this.game = game;
@@ -41,10 +43,30 @@ public class Level1 implements Screen {
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 
+// Create ground body
+        BodyDef groundBodyDef = new BodyDef();
+        groundBodyDef.position.set(0, 45/ PIXELS_TO_METERS); // Position at bottom of the screen
+        Body groundBody = world.createBody(groundBodyDef);
+        // Create ground fixture
+        PolygonShape groundShape = new PolygonShape();
+        groundShape.setAsBox(camera.viewportWidth / 2, 1); // Width of screen, very thin height
+
+        FixtureDef groundFixtureDef = new FixtureDef();
+        groundFixtureDef.shape = groundShape;
+        groundFixtureDef.friction = 0.5f;
+        groundBody.createFixture(groundFixtureDef);
+
+
+        groundShape.dispose();
+
         Texture bgtexture=new Texture(Gdx.files.internal("Images/Level1-bg.jpg"));
-        bird1=new Bird(world, "Images/redBird.png", "RedBird", 0.15f, -10, 20);
-        bird2=new Bird(world, "Images/yellowBird.png", "YellowBird", 0.15f, -20, 63);
-        bird3=new Bird(world, "Images/bombBird.png", "BombBird", 0.15f, -40, 45);
+        bird1=new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 130, 220);
+//        bird2=new Bird(world, "Images/yellowBird.png", "YellowBird", 0.15f, 90, 250);
+//        bird3=new Bird(world, "Images/bombBird.png", "BombBird", 0.15f, 50, 260);
+        bird2=new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 110, 220);
+
+        bird3=new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 90, 220);
+
         pig1=new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 350, 200);
         pig2=new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 365, 128);
         block1=new Block(world, "Images/blockhorizontal.png", "BlockSetup", 0.35f,  437, 330);
@@ -57,7 +79,7 @@ public class Level1 implements Screen {
         block8=new Block(world, "Images/blockvertical.png", "BlockSetup", 0.48f, 550, 90);
         Texture Catapult=new Texture(Gdx.files.internal("Images/Catapultimg.png"));
         Texture pauseG=new Texture(Gdx.files.internal("Images/Pause.png"));
-       // Texture exit=new Texture(Gdx.files.internal("Images/exitgameICON.png"));
+        // Texture exit=new Texture(Gdx.files.internal("Images/exitgameICON.png"));
         Texture winIcon=new Texture(Gdx.files.internal("Images/win.png"));
         Texture loseIcon=new Texture(Gdx.files.internal("Images/lose.png"));
 
@@ -75,9 +97,9 @@ public class Level1 implements Screen {
         pauseGame=new Sprite(pauseG);
 
 
-       // pig3=new Sprite(Pig3);
+        // pig3=new Sprite(Pig3);
         catapult=new Sprite(Catapult);
-      //  exitGame=new Sprite(exit);
+        //  exitGame=new Sprite(exit);
         winPage=new Sprite(winIcon);
         losePage=new Sprite(loseIcon);
 
@@ -90,27 +112,27 @@ public class Level1 implements Screen {
 //        bird3.setScale(0.2f);
 
 
-       // pig3.setScale(0.08f);
+        // pig3.setScale(0.08f);
         catapult.setScale(0.2f);
-       // exitGame.setScale(0.2f);
+        // exitGame.setScale(0.2f);
         winPage.setScale(0.15f);
         losePage.setScale(0.15f);
 
-      //  pauseGame.setPosition(-150, 270);
-   //     exitGame.setPosition(-150, 220);
+        //  pauseGame.setPosition(-150, 270);
+        //     exitGame.setPosition(-150, 220);
         catapult.setPosition(0, -48);
 //        bird1.setPosition(-10, 30);
 //        bird2.setPosition(-20, 73);
 //        bird3.setPosition(-40, 55);
 
-       // pig3.setPosition(175, 60);
+        // pig3.setPosition(175, 60);
 //        blocks.setPosition(360, 40);
 //        winPage.setPosition(400, 270);
 //        losePage.setPosition(400, 260);
         // Update sprite positions to use absolute coordinates
 //        pauseGame.setPosition(50, Gdx.graphics.getHeight() - 100);  // Adjusted for visibility
         pauseGame.setPosition(-150,270);
-     //   exitGame.setPosition(50, Gdx.graphics.getHeight() - 150);   // Positioned below pause
+        //   exitGame.setPosition(50, Gdx.graphics.getHeight() - 150);   // Positioned below pause
 //        winPage.setPosition(Gdx.graphics.getWidth() - 150, Gdx.graphics.getHeight() - 100);
 //        losePage.setPosition(Gdx.graphics.getWidth() - 150, Gdx.graphics.getHeight() - 150);
         winPage.setPosition(360,275);
@@ -123,11 +145,19 @@ public class Level1 implements Screen {
     public void show() {
 
     }
+    private void stopBirdIfAtGround(Bird bird) {
+        if (bird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 50) { // Adjust ground level as needed
+            bird.getBirdBody().setLinearVelocity(0, 0);
+            bird.getBirdBody().setAngularVelocity(0);
+        }
+    }
 
     @Override
     public void render(float delta) {
+        world.step(delta, 6, 2);
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
 
         // Update camera
         camera.update();
@@ -136,13 +166,13 @@ public class Level1 implements Screen {
         batch.begin();
         bgSprite.draw(batch);
         pauseGame.draw(batch);
-      //  exitGame.draw(batch);
+        //  exitGame.draw(batch);
         bird1.draw(batch);
         bird2.draw(batch);
         bird3.draw(batch);
         pig1.draw(batch);
         pig2.draw(batch);
-       // pig3.draw(batch);
+        // pig3.draw(batch);
         catapult.draw(batch);
         winPage.draw(batch);
         losePage.draw(batch);
@@ -154,7 +184,9 @@ public class Level1 implements Screen {
         block6.draw(batch);
         block7.draw(batch);
         block8.draw(batch);
-
+        stopBirdIfAtGround(bird1);
+        stopBirdIfAtGround(bird2);
+        stopBirdIfAtGround(bird3);
         batch.end();
 
         // Handle touch input
