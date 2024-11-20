@@ -26,7 +26,6 @@ public class Bird extends GameObject {
         birdie = world.createBody(birdBody);
         birdie.setUserData(this); // Store this Bird object in the body for later reference
         birdie.setGravityScale(1.5f); // Optional: Increases the bird's gravity effect by 1.5x
-
         birdie.setLinearDamping(1.0f);  // Adjust value between 0 and 1
 
 
@@ -36,12 +35,12 @@ public class Bird extends GameObject {
         getBirdBody().setLinearVelocity(0, 0);
         getBirdBody().setAngularVelocity(0);
 
-        // Ensure the bird is positioned at ground level if it's below
-        float groundLevel = 45 / PIXELS_TO_METERS;
-        Vector2 currentPos = getBirdBody().getPosition();
-        if (currentPos.y < groundLevel) {
-            getBirdBody().setTransform(currentPos.x, groundLevel, 0);
-        }
+//        // Ensure the bird is positioned at ground level if it's below
+//        float groundLevel = 45 / PIXELS_TO_METERS;
+//        Vector2 currentPos = getBirdBody().getPosition();
+//        if (currentPos.y < groundLevel) {
+//            getBirdBody().setTransform(currentPos.x, groundLevel, 0);
+//        }
     }
     @Override
     protected void createCircleFixture(float density, float friction, float restitution) {
@@ -62,8 +61,8 @@ public class Bird extends GameObject {
 
     public void draw(SpriteBatch batch) {
         objectSprite.setPosition(
-            birdie.getPosition().x * PIXELS_TO_METERS - objectSprite.getWidth() / 2,
-            birdie.getPosition().y * PIXELS_TO_METERS - objectSprite.getHeight() / 2
+                birdie.getPosition().x * PIXELS_TO_METERS - objectSprite.getWidth() / 2,
+                birdie.getPosition().y * PIXELS_TO_METERS - objectSprite.getHeight() / 2
         ); // Sync sprite position with Box2D body
         objectSprite.draw(batch);
     }
@@ -101,9 +100,9 @@ public class Bird extends GameObject {
     public void launch(Vector2 launchVelocity) {
         birdie.setLinearVelocity(0, 0); // Reset any current velocity
         birdie.applyLinearImpulse(
-            new Vector2(launchVelocity.x / PIXELS_TO_METERS, launchVelocity.y / PIXELS_TO_METERS),
-            birdie.getWorldCenter(),
-            true
+                new Vector2(launchVelocity.x / PIXELS_TO_METERS, launchVelocity.y / PIXELS_TO_METERS),
+                birdie.getWorldCenter(),
+                true
         ); // Launch the bird with a specific velocity
     }
 
