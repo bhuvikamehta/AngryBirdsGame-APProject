@@ -31,7 +31,18 @@ public class Bird extends GameObject {
 
 
     }
+    public void stopMovement() {
+        // Forcibly set velocity to zero
+        getBirdBody().setLinearVelocity(0, 0);
+        getBirdBody().setAngularVelocity(0);
 
+        // Ensure the bird is positioned at ground level if it's below
+        float groundLevel = 45 / PIXELS_TO_METERS;
+        Vector2 currentPos = getBirdBody().getPosition();
+        if (currentPos.y < groundLevel) {
+            getBirdBody().setTransform(currentPos.x, groundLevel, 0);
+        }
+    }
     @Override
     protected void createCircleFixture(float density, float friction, float restitution) {
         CircleShape shape = new CircleShape();
