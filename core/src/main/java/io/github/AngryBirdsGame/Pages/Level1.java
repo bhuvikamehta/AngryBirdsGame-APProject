@@ -25,12 +25,16 @@ public class Level1 implements Screen {
     private Pig pig1, pig2;
     private Block block1, block2, block3, block4, block5, block6, block7, block8;
     private Music music_buff, icon_sound, shoot_sound, hit_sound;
-    private Preferences preferences;
-    private float touchCooldown = 0.5f;
-    private float lastTouchTime = 0;
     private OrthographicCamera camera;
     private World world;
     protected static final float PIXELS_TO_METERS = 100f;
+    private Bird currentBird;
+    private Bird[] birdQueue;
+    private int currentBirdIndex=-1;
+    private float[] initialBirdX = new float[3];
+    private float[] initialBirdY = new float[3];
+    private float catapultX = 170;
+    private float catapultY = 228;
 
 
     public Level1(AngryBirds game) {
@@ -67,8 +71,8 @@ public class Level1 implements Screen {
 
         bird3=new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 90, 220);
 
-        pig1=new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 350, 200);
-        pig2=new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 365, 128);
+        pig1=new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 357, 200);
+        pig2=new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 358, 128);
         block1=new Block(world, "Images/blockhorizontal.png", "BlockSetup", 0.35f,  437, 330);
         block2=new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f,  480, 180);
         block3=new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f,  520, 180);
@@ -82,6 +86,18 @@ public class Level1 implements Screen {
         // Texture exit=new Texture(Gdx.files.internal("Images/exitgameICON.png"));
         Texture winIcon=new Texture(Gdx.files.internal("Images/win.png"));
         Texture loseIcon=new Texture(Gdx.files.internal("Images/lose.png"));
+
+        birdQueue = new Bird[]{bird1, bird2, bird3};
+        // Initialize bird queue and store initial positions
+
+        for (int i = 0; i < birdQueue.length; i++) {
+            // Store initial positions
+            initialBirdX[i] = birdQueue[i].getX();
+            initialBirdY[i] = birdQueue[i].getY();
+
+            // Restore default gravity
+//            birdQueue[i].getBirdBody().setGravityScale(1.5f);
+        }
 
 
 //        //playing gamesound before shoot
@@ -146,12 +162,72 @@ public class Level1 implements Screen {
 
     }
     private void stopBirdIfAtGround(Bird bird) {
-        if (bird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 50) { // Adjust ground level as needed
+        if (bird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) { // Adjust ground level as needed
             bird.getBirdBody().setLinearVelocity(0, 0);
             bird.getBirdBody().setAngularVelocity(0);
         }
     }
 
+    private void selectBird(int index) {
+        // If a bird is currently on the catapult, return it to queue
+        if (currentBirdIndex != -1) {
+            resetBirdToQueuePosition(birdQueue[currentBirdIndex]);
+        }
+
+        // Select new bird
+        currentBird = birdQueue[index];
+        currentBirdIndex = index;
+
+        // Position bird on catapult
+        positionBirdOnCatapult(currentBird);
+    }
+
+    private void positionBirdOnCatapult(Bird bird) {
+        // Disable gravity and set precise position
+        bird.getBirdBody().setGravityScale(0);
+        bird.getBirdBody().setTransform(
+            catapultX / Bird.PIXELS_TO_METERS,
+            catapultY / Bird.PIXELS_TO_METERS,
+            0
+        );
+        bird.getBirdBody().setLinearVelocity(0, 0);
+        bird.getBirdBody().setAngularVelocity(0);
+
+        // Update sprite position to match
+        bird.objectSprite.setPosition(catapultX, catapultY);
+    }
+
+
+
+    private void resetBirdToQueuePosition(Bird bird) {
+        // Find the bird's original index
+        int index = -1;
+        for (int i = 0; i < birdQueue.length; i++) {
+            if (birdQueue[i] == bird) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index != -1) {
+            // Always reset to the original initial position
+            float originalX = initialBirdX[index];
+            float originalY = initialBirdY[index];
+
+            // Force the bird back to its original position
+            bird.setPosition(originalX, originalY);
+
+            // Restore original gravity
+            bird.getBirdBody().setGravityScale(1.5f);
+
+            // Ensure the bird is completely stopped
+            bird.stopMovement();
+        }
+
+        // Reset current bird tracking
+        currentBird = null;
+        currentBirdIndex = -1;
+    }
     @Override
     public void render(float delta) {
         world.step(delta, 6, 2);
@@ -187,7 +263,23 @@ public class Level1 implements Screen {
         stopBirdIfAtGround(bird1);
         stopBirdIfAtGround(bird2);
         stopBirdIfAtGround(bird3);
+
         batch.end();
+        // Handle touch input for bird selection
+        if (Gdx.input.justTouched()) {
+            Vector3 touchPos = new Vector3();
+            touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            camera.unproject(touchPos);
+
+            // Check if a bird is touched
+            for (int i = 0; i < birdQueue.length; i++) {
+                Bird bird = birdQueue[i];
+                if (bird.objectSprite.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
+                    selectBird(i);
+                    break;
+                }
+            }
+        }
 
         // Handle touch input
         if (Gdx.input.justTouched()) {
