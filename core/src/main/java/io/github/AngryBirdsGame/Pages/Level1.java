@@ -69,8 +69,8 @@ public class Level1 implements Screen {
         bird2 = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 110, 220);
         bird3 = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 90, 220);
 
-        pig1 = new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 357, 200);
-        pig2 = new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 358, 128);
+        pig1 = new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 520, 360);
+        pig2 = new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 520, 290);
 
         block1 = new Block(world, "Images/blockhorizontal.png", "BlockSetup", 0.35f, 437, 330);
         block2 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f, 480, 180);
@@ -190,6 +190,8 @@ public class Level1 implements Screen {
     @Override
     public void render(float delta) {
         world.step(delta, 6, 2);
+        pig1.lockPosition();
+        pig2.lockPosition();
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
