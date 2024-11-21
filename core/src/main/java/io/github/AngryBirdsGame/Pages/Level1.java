@@ -1,22 +1,25 @@
 package io.github.AngryBirdsGame.Pages;
 
+
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 import io.github.AngryBirdsGame.AngryBirds;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
+import io.github.AngryBirdsGame.Pages.CollisionDestruction;
+
+import java.util.*;
+
 import com.badlogic.gdx.math.Rectangle;
 
 public class Level1 implements Screen {
@@ -38,11 +41,35 @@ public class Level1 implements Screen {
     private float[] initialBirdY = new float[3];
     private float catapultX = 170;
     private float catapultY = 228;
+    private boolean isDragging = false;
+    private Vector2 dragStart = new Vector2();
+    private Vector2 dragCurrent = new Vector2();
+    private static final float MAX_DRAG_DISTANCE = 60f;
+    private static final float LAUNCH_FORCE_MULTIPLIER = 5.0f;
+    private static final float COLLISION_IMPULSE_THRESHOLD = 5.0f;
+    private static final float SLINGSHOT_LEFT_X = 165f;  // Left band anchor point
+    private static final float SLINGSHOT_RIGHT_X = 175f; // Right band anchor point
+    private static final float SLINGSHOT_Y = 250f;      // Band anchor Y position
+    private ShapeRenderer shapeRenderer;                // For drawing the bands
+    private static final Color BAND_COLOR = new Color(0.4f, 0.2f, 0.1f, 1f);// Brown rubber band color
+    private boolean[] pigDestroyed;
+    private boolean[] blockDestroyed;
+    private Array<CollisionDestruction> activeDestructions;
+    // Add fields to track destruction state
+    private Array<GameObject> objectsToDestroy;
+    private boolean isDestroying;
+
 
     public Level1(AngryBirds game) {
         this.game = game;
         this.batch = new SpriteBatch();
         this.world = new World(new Vector2(0, -9.8f), true);
+        pigDestroyed = new boolean[2];
+        blockDestroyed = new boolean[8];
+        activeDestructions = new Array<>();
+        objectsToDestroy=new Array<>();
+        isDestroying=false;
+
 
         // Initialize camera
         camera = new OrthographicCamera();
@@ -122,7 +149,15 @@ public class Level1 implements Screen {
         pauseGame.setPosition(-150, 270);
         winPage.setPosition(360, 275);
         losePage.setPosition(410, 285);
+
+        shapeRenderer = new ShapeRenderer();
+        shapeRenderer.setAutoShapeType(true);
+
+      //  world.setContactListener(new CollisionContactListener());
     }
+
+
+
 
     @Override
     public void show() {
@@ -186,6 +221,13 @@ public class Level1 implements Screen {
         this.currentBird = newBird;
     }
 
+    private boolean isCollisionBetween(Class<?> class1, Class<?> class2, Object obj1, Object obj2) {
+        return (class1.isInstance(obj1) && class2.isInstance(obj2)) ||
+            (class1.isInstance(obj2) && class2.isInstance(obj1));
+    }
+
+
+
 
     @Override
     public void render(float delta) {
@@ -198,16 +240,28 @@ public class Level1 implements Screen {
         // Update camera
         camera.update();
         batch.setProjectionMatrix(camera.combined);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        handleDragInput();
 
         batch.begin();
         bgSprite.draw(batch);
         pauseGame.draw(batch);
+
+        // Draw catapult base behind the bands
+        catapult.draw(batch);
+        batch.end();
+
+        // Draw rubber bands if dragging
+        if (isDragging && currentBird != null) {
+            drawRubberBands();
+        }
+
+        batch.begin();
         bird1.draw(batch);
         bird2.draw(batch);
         bird3.draw(batch);
         pig1.draw(batch);
         pig2.draw(batch);
-        catapult.draw(batch);
         winPage.draw(batch);
         losePage.draw(batch);
         block1.draw(batch);
@@ -290,7 +344,155 @@ public class Level1 implements Screen {
                 }
             }
         }
+
     }
+
+
+
+    private void handleDragInput() {
+        if (currentBird == null) return;
+
+        // Get mouse/touch position and convert to world coordinates
+        Vector3 touchPos = new Vector3();
+        touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+        camera.unproject(touchPos);
+
+        if (Gdx.input.isTouched()) {
+            // Check if we're starting a new drag
+            if (!isDragging) {
+                // Only start dragging if touching near the bird
+                float birdX = currentBird.getBirdBody().getPosition().x * PIXELS_TO_METERS;
+                float birdY = currentBird.getBirdBody().getPosition().y * PIXELS_TO_METERS;
+
+                if (Vector2.dst(birdX, birdY, touchPos.x, touchPos.y) < 50) {
+                    isDragging = true;
+                    dragStart.set(touchPos.x, touchPos.y);
+                }
+            }
+
+            if (isDragging) {
+                dragCurrent.set(touchPos.x, touchPos.y);
+
+                // Calculate the drag vector from the catapult position
+                float dragX = catapultX - touchPos.x;
+                float dragY = catapultY - touchPos.y;
+
+                // Limit the drag distance
+                float dragDistance = (float) Math.sqrt(dragX * dragX + dragY * dragY);
+                if (dragDistance > MAX_DRAG_DISTANCE) {
+                    float scale = MAX_DRAG_DISTANCE / dragDistance;
+                    dragX *= scale;
+                    dragY *= scale;
+                }
+
+                // Update bird position
+                float newX = catapultX - dragX;
+                float newY = catapultY - dragY;
+
+                // Update bird body position
+                currentBird.getBirdBody().setTransform(
+                    newX / PIXELS_TO_METERS,
+                    newY / PIXELS_TO_METERS,
+                    0
+                );
+
+                // Update sprite position to match physics body
+                currentBird.objectSprite.setPosition(
+                    currentBird.getBirdBody().getPosition().x * PIXELS_TO_METERS,
+                    currentBird.getBirdBody().getPosition().y * PIXELS_TO_METERS
+                );
+            }
+        } else if (isDragging) {
+            // Mouse/touch released, launch the bird
+            isDragging = false;
+
+            // Calculate launch velocity based on drag vector
+            float dragX = catapultX - dragCurrent.x;
+            float dragY = catapultY - dragCurrent.y;
+
+            // Scale the launch force
+            Vector2 launchVelocity = new Vector2(
+                dragX * LAUNCH_FORCE_MULTIPLIER,
+                dragY * LAUNCH_FORCE_MULTIPLIER
+            );
+
+            // Launch the bird
+            currentBird.getBirdBody().setGravityScale(1);
+            currentBird.getBirdBody().setLinearVelocity(
+                launchVelocity.x,
+                launchVelocity.y
+            );
+
+            // Reset current bird
+            currentBird = null;
+
+            // Select next bird if available
+            selectBird();
+        }
+    }
+
+    private void drawRubberBands() {
+        // Enable blending for smooth lines
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        // Get current bird position
+        float birdX = currentBird.getBirdBody().getPosition().x * Bird.PIXELS_TO_METERS;
+        float birdY = currentBird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS;
+
+        // Calculate band width based on stretch (makes bands thinner when stretched)
+        float stretchDistance = Vector2.dst(SLINGSHOT_LEFT_X, SLINGSHOT_Y, birdX, birdY);
+        float bandWidth = Math.max(1f, 3f - (stretchDistance / MAX_DRAG_DISTANCE) * 2f);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(BAND_COLOR);
+
+        // Draw left band
+        drawBand(SLINGSHOT_LEFT_X, SLINGSHOT_Y, birdX, birdY, bandWidth);
+
+        // Draw right band
+        drawBand(SLINGSHOT_RIGHT_X, SLINGSHOT_Y, birdX, birdY, bandWidth);
+
+        shapeRenderer.end();
+
+        // Optional: Add band shine effect
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(1f, 1f, 1f, 0.2f); // Slight white shine
+
+        // Draw thinner shine lines on both bands
+        drawBand(SLINGSHOT_LEFT_X, SLINGSHOT_Y, birdX, birdY, bandWidth * 0.3f);
+        drawBand(SLINGSHOT_RIGHT_X, SLINGSHOT_Y, birdX, birdY, bandWidth * 0.3f);
+
+        shapeRenderer.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    private void drawBand(float x1, float y1, float x2, float y2, float width) {
+        // Calculate perpendicular vector for band thickness
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (length > 0) {
+            // Normalize and rotate 90 degrees for perpendicular vector
+            float perpX = -dy * width / length;
+            float perpY = dx * width / length;
+
+            // Draw band as a quad
+            shapeRenderer.triangle(
+                x1 + perpX, y1 + perpY,
+                x1 - perpX, y1 - perpY,
+                x2 + perpX, y2 + perpY
+            );
+            shapeRenderer.triangle(
+                x2 + perpX, y2 + perpY,
+                x2 - perpX, y2 - perpY,
+                x1 - perpX, y1 - perpY
+            );
+        }
+    }
+
 
     private boolean isBirdTouched(Bird bird, float touchX, float touchY) {
         if (bird == null || bird.objectSprite == null) return false;
@@ -478,5 +680,9 @@ public class Level1 implements Screen {
         catapult.getTexture().dispose();
         winPage.getTexture().dispose();
         losePage.getTexture().dispose();
+//        for (CollisionDestruction destruction : activeDestructions) {
+//            destruction.dispose();
+//        }
+//        activeDestructions.clear();
     }
 }
