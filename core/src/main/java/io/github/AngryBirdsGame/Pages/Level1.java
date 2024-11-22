@@ -45,7 +45,7 @@ public class Level1 implements Screen {
     private Vector2 dragStart = new Vector2();
     private Vector2 dragCurrent = new Vector2();
     private static final float MAX_DRAG_DISTANCE = 60f;
-    private static final float LAUNCH_FORCE_MULTIPLIER = 5.0f;
+    private static final float LAUNCH_FORCE_MULTIPLIER = 0.5f;
     private static final float COLLISION_IMPULSE_THRESHOLD = 5.0f;
     private static final float SLINGSHOT_LEFT_X = 165f;  // Left band anchor point
     private static final float SLINGSHOT_RIGHT_X = 175f; // Right band anchor point
