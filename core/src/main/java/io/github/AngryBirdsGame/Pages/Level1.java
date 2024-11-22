@@ -153,7 +153,7 @@ public class Level1 implements Screen {
         shapeRenderer = new ShapeRenderer();
         shapeRenderer.setAutoShapeType(true);
 
-      //  world.setContactListener(new CollisionContactListener());
+        //  world.setContactListener(new CollisionContactListener());
     }
 
 
@@ -163,12 +163,6 @@ public class Level1 implements Screen {
     public void show() {
     }
 
-    private void stopBirdIfAtGround(Bird bird) {
-        if (bird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) { // Adjust ground level as needed
-            bird.getBirdBody().setLinearVelocity(0, 0);
-            bird.getBirdBody().setAngularVelocity(0);
-        }
-    }
 
     private void swapBirdsOnCatapult(Bird currentBird, Bird newBird) {
         if (currentBird == null || newBird == null) return;
@@ -224,6 +218,39 @@ public class Level1 implements Screen {
     private boolean isCollisionBetween(Class<?> class1, Class<?> class2, Object obj1, Object obj2) {
         return (class1.isInstance(obj1) && class2.isInstance(obj2)) ||
             (class1.isInstance(obj2) && class2.isInstance(obj1));
+    }
+
+    private void handleBirdSelection(float touchX, float touchY) {
+        // Check if we're touching any bird in the queue
+        Iterator<Bird> iterator = birdQueue.iterator();
+        while (iterator.hasNext()) {
+            Bird queuedBird = iterator.next();
+            if (isBirdTouched(queuedBird, touchX, touchY)) {
+                if (currentBird == null) {
+                    // No bird on catapult - place the touched bird
+                    currentBird = queuedBird;
+                    iterator.remove();
+                    positionBirdOnCatapult(currentBird);
+                } else {
+                    // Bird already on catapult - swap them
+                    Vector2 tempPos = new Vector2(queuedBird.getBirdBody().getPosition().x * PIXELS_TO_METERS,
+                        queuedBird.getBirdBody().getPosition().y * PIXELS_TO_METERS);
+
+                    // Move queued bird to catapult
+                    iterator.remove();
+                    positionBirdOnCatapult(queuedBird);
+
+                    // Move current bird back to queue position
+                    currentBird.getBirdBody().setType(BodyDef.BodyType.KinematicBody);
+                    currentBird.setPosition(tempPos.x, tempPos.y);
+                    birdQueue.add(currentBird);
+
+                    // Update current bird reference
+                    currentBird = queuedBird;
+                }
+                return;
+            }
+        }
     }
 
 
@@ -309,39 +336,16 @@ public class Level1 implements Screen {
                 return;
             }
 
-            //If any bird in queue has been touched until now
-            List<Bird> birdList = Arrays.asList(bird1, bird2, bird3);
-            for (Bird queuedBird : birdList) {
-                // Expanded touch detection to include a larger area around the bird
-                if (isBirdTouched(queuedBird, touchPos.x, touchPos.y) && birdQueue.contains(queuedBird)) {
-                    // If a bird is currently on the catapult
-                    if (currentBird != null) {
-                        // Swap the birds, keeping their visual and physical properties
-                        swapBirdsOnCatapult(currentBird, queuedBird);
-                        currentBird = null;
-                    } else {
-                        // If no bird is on the catapult, just position the new bird
-                        currentBird = queuedBird;
-                        birdQueue.remove(queuedBird);
-                        positionBirdOnCatapult(currentBird);
-                    }
-                    return;
-                }
-            }
+            handleBirdSelection(touchPos.x, touchPos.y);
 
             // Bird selection and launching logic
-            if (currentBird != null ) {
-                if (isBirdTouched(currentBird, touchPos.x, touchPos.y)) {
-                    if (currentBird.isReadyForLaunch()&&currentBird!=null) {
-                        float launchForceX = (catapultX - touchPos.x) * 0.5f;
-                        float launchForceY = (catapultY - touchPos.y) * 0.5f;
+            if (currentBird != null && isBirdTouched(currentBird, touchPos.x, touchPos.y)) {
+                isDragging = true;
+                dragStart.set(touchPos.x, touchPos.y);
+            }
 
-                        Vector2 launchVelocity = new Vector2(launchForceX, launchForceY);
-                        currentBird.launch(launchVelocity);
-
-                        selectBird();
-                    }
-                }
+            if (currentBird != null) {
+                handleDragInput();
             }
         }
 
@@ -497,76 +501,17 @@ public class Level1 implements Screen {
     private boolean isBirdTouched(Bird bird, float touchX, float touchY) {
         if (bird == null || bird.objectSprite == null) return false;
 
-        // Expand the touch area around the bird sprite
-        float expandedWidth = bird.objectSprite.getWidth() * 2;
-        float expandedHeight = bird.objectSprite.getHeight() * 2;
+        float birdCenterX = bird.getBirdBody().getPosition().x * PIXELS_TO_METERS;
+        float birdCenterY = bird.getBirdBody().getPosition().y * PIXELS_TO_METERS;
 
-        // Calculate the expanded bounding rectangle
-        float minX = bird.objectSprite.getX() - (expandedWidth - bird.objectSprite.getWidth()) / 2;
-        float minY = bird.objectSprite.getY() - (expandedHeight - bird.objectSprite.getHeight()) / 2;
+        // Use a circular touch area for better touch detection
+        float touchRadius = 30f; // Adjust this value as needed
+        float distanceSquared = (touchX - birdCenterX) * (touchX - birdCenterX) +
+            (touchY - birdCenterY) * (touchY - birdCenterY);
 
-        // Create a rectangle with expanded boundaries
-        Rectangle expandedBounds = new Rectangle(
-            minX,
-            minY,
-            expandedWidth,
-            expandedHeight
-        );
-
-        // Check if the touch point is within the expanded bounds
-        return expandedBounds.contains(touchX, touchY);
+        return distanceSquared <= touchRadius * touchRadius;
     }
 
-    private void placeBirdAtGroundPosition(Bird bird) {
-        if (bird != null) {
-            // Find the index of the reference bird
-            int index = -1;
-            if (bird == bird1) index = 0;
-            else if (bird == bird2) index = 1;
-            else if (bird == bird3) index = 2;
-
-            if (index != -1) {
-                // Remove the bird from the world to reset its physics state
-                world.destroyBody(bird.getBirdBody());
-
-                // Recreate the bird with its original parameters
-                Bird newBird = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, initialBirdX[index], initialBirdY[index]);
-
-                // Update the corresponding bird reference
-                if (index == 0) bird1 = newBird;
-                else if (index == 1) bird2 = newBird;
-                else bird3 = newBird;
-
-                // Add the new bird to the queue if it's not already there
-                if (!birdQueue.contains(newBird)) {
-                    birdQueue.add(newBird);
-                }
-
-                // Dispose of the old bird to prevent memory leaks
-                bird.dispose();
-            }
-
-//            // Place the bird to be replaced at the ground position
-//            float groundX = initialBirdX[referenceIndex];
-//            float groundY = initialBirdY[referenceIndex];
-
-//            // Reset bird's physics body
-//            birdToReplace.getBirdBody().setGravityScale(1);
-//            birdToReplace.getBirdBody().setTransform(
-//                groundX / Bird.PIXELS_TO_METERS,
-//                groundY / Bird.PIXELS_TO_METERS,
-//                0
-//            );
-//            birdToReplace.getBirdBody().setLinearVelocity(0, 0);
-//            birdToReplace.getBirdBody().setAngularVelocity(0);
-//
-//            // Update sprite position
-//            birdToReplace.objectSprite.setPosition(groundX, groundY);
-//
-//            // Add back to the queue
-//            birdQueue.add(birdToReplace);
-        }
-    }
 
     private void resetBirdCompletely(Bird bird, int index) {
         // Remove the bird from the world
@@ -601,39 +546,15 @@ public class Level1 implements Screen {
     }
 
     private void positionBirdOnCatapult(Bird bird) {
-        if (bird != null) {
-            float catapultX = 170; // Your original catapult X position
-            float catapultY = 228; // Your original catapult Y position
+        if (bird == null) return;
 
-            bird.getBirdBody().setGravityScale(0);
-            bird.getBirdBody().setTransform(
-                catapultX / Bird.PIXELS_TO_METERS,
-                catapultY / Bird.PIXELS_TO_METERS,
-                0
-            );
-            bird.getBirdBody().setLinearVelocity(0, 0);
-            bird.getBirdBody().setAngularVelocity(0);
-
-            // Update sprite position to match
-            bird.objectSprite.setPosition(catapultX, catapultY);
-        }
+        bird.getBirdBody().setType(BodyDef.BodyType.KinematicBody);
+        bird.setPosition(catapultX, catapultY);
+        bird.getBirdBody().setLinearVelocity(0, 0);
+        bird.getBirdBody().setAngularVelocity(0);
+        bird.getBirdBody().setGravityScale(0);
     }
 
-    private void resetBirdToQueuePosition(Bird bird) {
-        if (bird != null) {
-            // Put the bird back into the queue
-            birdQueue.add(bird);
-
-            // Reset bird to its initial position
-            bird.setPosition(
-                initialBirdX[birdQueue.size() - 1],
-                initialBirdY[birdQueue.size() - 1]
-            );
-
-            // Stop the bird's movement
-            bird.stopMovement();
-        }
-    }
 
     @Override
     public void resize(int width, int height) {
