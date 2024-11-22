@@ -14,6 +14,9 @@ public class Pig extends GameObject  {
     private Body pigie;
     private boolean isALive;
     private boolean isVisible;
+    private float health = 0.2f;
+    private boolean isDestroying = false;
+
 
     public Pig(World world, String texturePath, String type, float scale, float posX, float posY) {
         super(world, texturePath, scale, posX, posY);
@@ -24,6 +27,7 @@ public class Pig extends GameObject  {
         this.isALive=true;
         this.isVisible=false;
         createCircleFixture(1.0f, 1.0f, 0.5f);
+       // body.setUserData(this);
 
     }
 
@@ -121,6 +125,13 @@ public class Pig extends GameObject  {
         }
     }
 
+    public Object getUserData() {
+        if (pigie != null) {
+            return pigie.getUserData();
+        }
+        return null;
+    }
+
 
 
 
@@ -147,6 +158,34 @@ public class Pig extends GameObject  {
 
     public Body getPigBody(){
         return pigie;
+    }
+
+
+    public void takeDamage(float damage) {
+        health -= damage;
+        if (health <= 0) {
+            isDestroying = true;
+        }
+    }
+
+    public void update(float deltaTime) {
+        if (isDestroying) {
+            // Gradually reduce scale and fade out
+            float reductionRate = 0.5f;  // Adjust for desired destruction speed
+            sizeObject -= reductionRate * deltaTime;
+            objectSprite.setScale(sizeObject);
+
+            // Remove from physics world when completely destroyed
+            if (sizeObject <= 0) {
+                world.destroyBody(pigie);
+                pigie = null;
+            }
+        }
+    }
+
+    // In your collision handling method
+    public void handleCollision(float impactForce) {
+        takeDamage(impactForce);
     }
 
 
