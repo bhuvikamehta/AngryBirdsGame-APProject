@@ -107,19 +107,19 @@ public class SelectLevelPage implements Screen{
                     preferences.flush();
                     game.setScreen(new Level1(game));
                 });
-//            } else if (isButtonTouched(touchX, touchY, level2.getBoundingRectangle())) {
-//                handleButtonClick(() -> {
-//                    music_buff.stop();
-//                    int savedLevel = preferences.getInteger("currentLevel", 2);
-//                    game.setScreen(new Level2(game));
-//                });
-//            } else if (isButtonTouched(touchX, touchY, level3.getBoundingRectangle())) {
-//                handleButtonClick(() -> {
-//                    music_buff.stop();
-//                    preferences.putInteger("currentLevel", 3);
-//                    preferences.flush();
-//                    game.setScreen(new Level3(game));
-//                });
+            } else if (isButtonTouched(touchX, touchY, level2.getBoundingRectangle())) {
+                handleButtonClick(() -> {
+                    music_buff.stop();
+                    int savedLevel = preferences.getInteger("currentLevel", 2);
+                    game.setScreen(new Level2(game));
+                });
+            } else if (isButtonTouched(touchX, touchY, level3.getBoundingRectangle())) {
+                handleButtonClick(() -> {
+                    music_buff.stop();
+                    preferences.putInteger("currentLevel", 3);
+                    preferences.flush();
+                    game.setScreen(new Level3(game));
+                });
             } else if (isButtonTouched(touchX, touchY, exitGame.getBoundingRectangle())) {
                 handleButtonClick(() -> {
                     game.setScreen(new MainMenuPage(game));
