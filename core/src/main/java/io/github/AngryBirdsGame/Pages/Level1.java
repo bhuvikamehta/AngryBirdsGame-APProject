@@ -54,10 +54,12 @@ public class Level1 implements Screen {
     private static final Color BAND_COLOR = new Color(0.4f, 0.2f, 0.1f, 1f);// Brown rubber band color
     private boolean[] pigDestroyed;
     private boolean[] blockDestroyed;
-    private Array<CollisionDestruction> activeDestructions;
-    // Add fields to track destruction state
+    private Array<CollisionDestruction> activeAnimations;
+    private CollisionContactListener contactListener;
     private Array<GameObject> objectsToDestroy;
-    private boolean isDestroying;
+    private Array<Block> blocks;
+    private Array<Pig> pigs;
+
 
 
     public Level1(AngryBirds game) {
@@ -66,9 +68,12 @@ public class Level1 implements Screen {
         this.world = new World(new Vector2(0, -9.8f), true);
         pigDestroyed = new boolean[2];
         blockDestroyed = new boolean[8];
-        activeDestructions = new Array<>();
+        activeAnimations = new Array<>();
         objectsToDestroy=new Array<>();
-        isDestroying=false;
+        contactListener = new CollisionContactListener(this);
+        world.setContactListener(contactListener);
+        blocks = new Array<>();
+        pigs = new Array<>();
 
 
         // Initialize camera
@@ -98,7 +103,8 @@ public class Level1 implements Screen {
 
         pig1 = new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 520, 360);
         pig2 = new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 520, 290);
-
+        pigs.add(pig1);
+        pigs.add(pig2);
         block1 = new Block(world, "Images/blockhorizontal.png", "BlockSetup", 0.35f, 437, 330);
         block2 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f, 480, 180);
         block3 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f, 520, 180);
@@ -107,7 +113,14 @@ public class Level1 implements Screen {
         block6 = new Block(world, "Images/h.png", "BlockSetup", 0.4f, 415, 250);
         block7 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.48f, 460, 90);
         block8 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.48f, 550, 90);
-
+        blocks.add(block1);
+        blocks.add(block2);
+        blocks.add(block3);
+        blocks.add(block4);
+        blocks.add(block5);
+        blocks.add(block6);
+        blocks.add(block7);
+        blocks.add(block8);
         Texture Catapult = new Texture(Gdx.files.internal("Images/Catapultimg.png"));
         Texture pauseG = new Texture(Gdx.files.internal("Images/Pause.png"));
         Texture winIcon = new Texture(Gdx.files.internal("Images/win.png"));
@@ -283,6 +296,8 @@ public class Level1 implements Screen {
             drawRubberBands();
         }
 
+        updateDestructions(delta);
+
         batch.begin();
         bird1.draw(batch);
         bird2.draw(batch);
@@ -303,6 +318,10 @@ public class Level1 implements Screen {
         if (bird1.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird1, 0);
         if (bird2.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird2, 1);
         if (bird3.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird3, 2);
+
+        for (CollisionDestruction anim : activeAnimations) {
+            anim.render(batch);
+        }
 
         batch.end();
 
@@ -349,6 +368,65 @@ public class Level1 implements Screen {
             }
         }
 
+    }
+
+    public void addDestructionAnimation(float x, float y, float scale) {
+        activeAnimations.add(new CollisionDestruction(x, y, scale));
+    }
+
+    public void markForDestruction(GameObject object) {
+        objectsToDestroy.add(object);
+    }
+
+    private void updateDestructions(float delta) {
+        // Update and remove finished animations
+        for (int i = activeAnimations.size - 1; i >= 0; i--) {
+            CollisionDestruction anim = activeAnimations.get(i);
+            anim.update(delta);
+            if (anim.isFinished()) {
+                anim.dispose();
+                activeAnimations.removeIndex(i);
+            }
+        }
+
+        // Handle object destruction
+        for (GameObject obj : objectsToDestroy) {
+            if (obj instanceof Pig) {
+                world.destroyBody(((Pig)obj).getPigBody());
+            } else if (obj instanceof Block) {
+                world.destroyBody(((Block)obj).getBody());
+            }
+        }
+        objectsToDestroy.clear();
+    }
+
+    public void update(float deltaTime) {
+        // Update blocks
+        for (Block block : blocks) {
+            block.update(deltaTime);
+        }
+
+        // Update pigs
+        for (Pig pig : pigs) {
+            pig.update(deltaTime);
+        }
+
+        // For pigs
+        Iterator<Pig> pigIterator = pigs.iterator();
+        while (pigIterator.hasNext()) {
+            Pig pig = pigIterator.next();
+            if (pig == null || pig.getPigBody() == null) {
+                pigIterator.remove();
+            }
+        }
+        // For pigs
+        Iterator<Block> blockIterator = blocks.iterator();
+        while (blockIterator.hasNext()) {
+            Block b = blockIterator.next();
+            if (b == null || b.getBlockBody() == null) {
+                pigIterator.remove();
+            }
+        }
     }
 
 
@@ -556,6 +634,8 @@ public class Level1 implements Screen {
     }
 
 
+
+
     @Override
     public void resize(int width, int height) {
     }
@@ -601,6 +681,10 @@ public class Level1 implements Screen {
         catapult.getTexture().dispose();
         winPage.getTexture().dispose();
         losePage.getTexture().dispose();
+        for (CollisionDestruction anim : activeAnimations) {
+            anim.dispose();
+        }
+        activeAnimations.clear();
 //        for (CollisionDestruction destruction : activeDestructions) {
 //            destruction.dispose();
 //        }
