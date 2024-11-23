@@ -12,9 +12,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.Color;
 import io.github.AngryBirdsGame.AngryBirds;
 
-//import io.github.AngryBirdsGame.AngryBirds.offline.StoryMode;
-//import org.angrypigs.game.online.JoinGame;
-
 public class LoadingPage implements Screen{
     private AngryBirds game;
     private SpriteBatch batch;
@@ -23,10 +20,8 @@ public class LoadingPage implements Screen{
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
     private float loadingTime = 3f;
-    //setting bar dimensions
     private static final int BAR_WIDTH = 300;
     private static final int BAR_HEIGHT = 20;
-   // private static final int BAR_SPACING = 80;
 
     public LoadingPage(AngryBirds angrybirdsgame){
         this.game=angrybirdsgame;
@@ -38,23 +33,18 @@ public class LoadingPage implements Screen{
         font.setColor(Color.BLACK);
         bgSprite.setSize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         bgSprite.setPosition(0, 0);
-
-
     }
-
-
+    
     @Override
     public void show() {
 
     }
-
-
+    
     @Override
     public void render(float v) {
         timeElapsed += v;
         float progress = Math.min(timeElapsed / loadingTime, 1);
 
-        // Clear the screen and draw the loading page
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -81,18 +71,15 @@ public class LoadingPage implements Screen{
         shapeRenderer.begin(ShapeType.Filled);
         float barProgress = Math.max(0, Math.min(1, progress * 3));
 
-        // Draw outer rectangle (white border)
         shapeRenderer.setColor(1, 1, 1, 0.9f);
         shapeRenderer.rect(centerX - BAR_WIDTH/2 - 2, barY - 2, BAR_WIDTH + 4, BAR_HEIGHT + 4);
 
         shapeRenderer.setColor(0, 0, 0, 0.9f);
         shapeRenderer.rect(centerX - BAR_WIDTH/2 - 1, barY - 1, BAR_WIDTH + 2, BAR_HEIGHT + 2);
 
-        // Draw white background
         shapeRenderer.setColor(1, 1, 1, 0.9f);
         shapeRenderer.rect(centerX - BAR_WIDTH/2, barY, BAR_WIDTH, BAR_HEIGHT);
 
-        // Draw progress (black)
         shapeRenderer.setColor(0, 0, 0, 0.9f);
         shapeRenderer.rect(centerX - BAR_WIDTH/2, barY, BAR_WIDTH * barProgress, BAR_HEIGHT);
 
@@ -103,7 +90,6 @@ public class LoadingPage implements Screen{
             game.setScreen(new PlayButtonPage(game));
             dispose();
         }
-
     }
 
     @Override
@@ -132,6 +118,5 @@ public class LoadingPage implements Screen{
         bgSprite.getTexture().dispose();
         shapeRenderer.dispose();
         font.dispose();
-
     }
 }
