@@ -12,24 +12,25 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 
 public class PauseGamePage implements Screen {
-
     private AngryBirds game;
     private SpriteBatch batch;
     private Sprite bgSprite, resume, restart,goToMainMenu, saveAndExit;
     private Music music_buff,icon_sound;
     private boolean snd = true;
-    private float touchCooldown = 0.5f;  
-    private float lastTouchTime = 0;  
+    private float touchCooldown = 0.5f;  // 0.5 seconds cooldown
+    private float lastTouchTime = 0;  // Track last touch time
     private OrthographicCamera camera;
+
 
     public PauseGamePage(AngryBirds angrybirdsgame){
         this.game=angrybirdsgame;
         this.batch= new SpriteBatch();
 
+        // Initialize camera
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        Texture bgTexture = new Texture(Gdx.files.internal("Images/pausepage_bg.jpeg")); 
+        Texture bgTexture = new Texture(Gdx.files.internal("Images/pausepage_bg.jpeg")); //images to be set abhi
         Texture resumeIcon=new Texture(Gdx.files.internal("images/resume-pause.png"));
         Texture restartIcon=new Texture(Gdx.files.internal("Images/restart-pause.png"));
         Texture goToMainMenuIcon=new Texture(Gdx.files.internal("Images/goMM.png"));
@@ -77,6 +78,7 @@ public class PauseGamePage implements Screen {
 
         batch.end();
 
+        // Update camera
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
@@ -87,13 +89,30 @@ public class PauseGamePage implements Screen {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
-
+             int currL=game.getCurrentLevel();
+            // Check each sprite's bounds
             if (resume.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 playSound();
-                game.setScreen(new Level1(game));
+                if(currL==1){
+                    game.setScreen(new Level1(game));
+                }
+                else if(currL==2){
+                    game.setScreen(new Level2(game));
+                }
+                else{
+                    game.setScreen(new Level3(game));
+                }
             } else if (restart.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 playSound();
-                game.setScreen(new Level1(game));
+                if(currL==1){
+                    game.setScreen(new Level1(game));
+                }
+                else if(currL==2){
+                    game.setScreen(new Level2(game));
+                }
+                else{
+                    game.setScreen(new Level3(game));
+                }
             } else if (goToMainMenu.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 playSound();
                 game.setScreen(new MainMenuPage(game));
@@ -103,6 +122,9 @@ public class PauseGamePage implements Screen {
                 game.setScreen(new MainMenuPage(game));
             }
         }
+
+
+
     }
 
     private void playSound() {
@@ -118,7 +140,7 @@ public class PauseGamePage implements Screen {
 
     private void handleButtonClick(Runnable action) {
         if (snd) {
-            icon_sound.play();  
+            icon_sound.play();  // Play sound once per tap
             snd = false;
         }
         action.run();
@@ -143,6 +165,8 @@ public class PauseGamePage implements Screen {
     public void hide() {
 
     }
+
+
 
     @Override
     public void dispose() {
