@@ -654,6 +654,13 @@ public class Level2 extends Level implements Screen{
             camera.unproject(touchPos);
             handleBirdSelection(touchPos.x, touchPos.y);
 
+            if (pauseGame.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
+                music_buff.stop();
+                playSound();
+                game.setScreen(new PauseGamePage(game));
+                return;
+            }
+
             // Bird selection and launching logic
             if (currentBird != null && isBirdTouched(currentBird, touchPos.x, touchPos.y)) {
                 isDragging = true;
