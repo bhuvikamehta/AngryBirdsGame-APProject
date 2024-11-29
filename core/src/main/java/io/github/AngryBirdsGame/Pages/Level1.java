@@ -65,6 +65,8 @@ public class Level1 extends Level implements Screen {
     private boolean birdLaunched = false;
     private Stage stage;
     private Skin skin;
+    private float losePageTimer = 0f;
+    private static final float LOSE_PAGE_DELAY = 2f; // 2 seconds delay
 
     public Level1(AngryBirds game) {
         super();
@@ -404,13 +406,7 @@ public class Level1 extends Level implements Screen {
         }
     }
     private void checkGameStatus() {
-        if (!allBirdsLaunched) {
-            // Check if all birds have been launched
-            if (currentBird == null && birdQueue.isEmpty()) {
-                allBirdsLaunched = true;
-            }
-            return;
-        }
+        // Win page logic remains the same as previous version
         boolean allPigsDead = true;
         for (Pig pig : pigs) {
             if (pig.getHealth() > 0) {
@@ -420,15 +416,51 @@ public class Level1 extends Level implements Screen {
         }
 
         if (allPigsDead) {
-            // All pigs are dead - move to win page
             music_buff.stop();
             game.setScreen(new WinPage(game));
-        } else {
-            // Pigs remain - move to lose page
-            music_buff.stop();
-            game.setScreen(new LosePage(game));
+            return;
+        }
+
+        // Lose page logic with timer
+        if (currentBird == null && birdQueue.isEmpty()) {
+            allBirdsLaunched = true;
+        }
+
+        // If all birds launched, start timer
+        if (allBirdsLaunched) {
+            losePageTimer += Gdx.graphics.getDeltaTime();
+
+            // After delay, check pig health
+            if (losePageTimer >= LOSE_PAGE_DELAY) {
+                // Recheck pig health after delay
+                boolean anyPigAlive = false;
+                for (Pig pig : pigs) {
+                    if (pig.getHealth() > 0) {
+                        anyPigAlive = true;
+                        break;
+                    }
+                }
+
+                if (anyPigAlive) {
+                    music_buff.stop();
+                    game.setScreen(new LosePage(game));
+                }
+            }
         }
     }
+
+    private boolean areAllObjectsStationary() {
+        for (Pig pig : pigs) {
+            if (pig.getPigBody().getLinearVelocity().len() > 0.1f) return false;
+        }
+
+        for (Block block : blocks) {
+            if (block.getBlockBody().getLinearVelocity().len() > 0.1f) return false;
+        }
+
+        return true;
+    }
+
     private void updateObjectPos() {
         // Safe updates before physics step
         for (GameObject obj : gameObjects) {
