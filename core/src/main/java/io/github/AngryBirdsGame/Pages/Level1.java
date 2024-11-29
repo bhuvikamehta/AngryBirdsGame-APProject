@@ -11,6 +11,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Array;
 import io.github.AngryBirdsGame.AngryBirds;
 import com.badlogic.gdx.physics.box2d.*;
@@ -20,9 +23,7 @@ import io.github.AngryBirdsGame.Pages.CollisionDestruction;
 
 import java.util.*;
 
-import com.badlogic.gdx.math.Rectangle;
-
-public class Level1 implements Screen {
+public class Level1 extends Level implements Screen {
     private AngryBirds game;
     private boolean snd = true;
     private SpriteBatch batch;
@@ -36,56 +37,55 @@ public class Level1 implements Screen {
     protected static final float PIXELS_TO_METERS = 100f;
     private Bird currentBird;
     private Queue<Bird> birdQueue;
-    private int currentBirdIndex = -1;
     private float[] initialBirdX = new float[3];
     private float[] initialBirdY = new float[3];
     private float catapultX = 170;
-    private float catapultY = 228;
+    private float catapultY = 150;
     private boolean isDragging = false;
     private Vector2 dragStart = new Vector2();
     private Vector2 dragCurrent = new Vector2();
     private static final float MAX_DRAG_DISTANCE = 60f;
-    private static final float LAUNCH_FORCE_MULTIPLIER = 0.5f;
-    private static final float COLLISION_IMPULSE_THRESHOLD = 5.0f;
-    private static final float SLINGSHOT_LEFT_X = 165f;  // Left band anchor point
-    private static final float SLINGSHOT_RIGHT_X = 175f; // Right band anchor point
-    private static final float SLINGSHOT_Y = 250f;      // Band anchor Y position
-    private ShapeRenderer shapeRenderer;                // For drawing the bands
+    private static final float LAUNCH_FORCE_MULTIPLIER = 0.1f;
+    private static final float SLINGSHOT_LEFT_X = 190f;
+    private static final float SLINGSHOT_RIGHT_X = 170f;
+    private static final float SLINGSHOT_Y = 194f;
+    private ShapeRenderer shapeRenderer;
     private static final Color BAND_COLOR = new Color(0.4f, 0.2f, 0.1f, 1f);// Brown rubber band color
     private boolean[] pigDestroyed;
     private boolean[] blockDestroyed;
     private Array<CollisionDestruction> activeAnimations;
     private CollisionContactListener contactListener;
-    private Array<GameObject> objectsToDestroy;
-    private Array<Block> blocks;
-    private Array<Pig> pigs;
-
+    private ArrayList<GameObject> objectsToDestroy;
+    private ArrayList<Block> blocks;
+    private ArrayList<Pig> pigs;
+    private boolean gameStarted = false;
+    private boolean allBirdsLaunched=false;
 
 
     public Level1(AngryBirds game) {
+        super();
+        game.setCurrentLevel(1);
         this.game = game;
         this.batch = new SpriteBatch();
         this.world = new World(new Vector2(0, -9.8f), true);
         pigDestroyed = new boolean[2];
         blockDestroyed = new boolean[8];
         activeAnimations = new Array<>();
-        objectsToDestroy=new Array<>();
+        objectsToDestroy=new ArrayList<>();
         contactListener = new CollisionContactListener(this);
         world.setContactListener(contactListener);
-        blocks = new Array<>();
-        pigs = new Array<>();
+        blocks = new ArrayList<>();
+        pigs = new ArrayList<>();
 
 
-        // Initialize camera
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-        // Create ground body
         BodyDef groundBodyDef = new BodyDef();
-        groundBodyDef.position.set(0, 45 / PIXELS_TO_METERS); // Position at bottom of the screen
+        groundBodyDef.position.set(0, 2 / PIXELS_TO_METERS); // Position at bottom of the screen
+        groundBodyDef.type = BodyDef.BodyType.StaticBody;
         Body groundBody = world.createBody(groundBodyDef);
 
-        // Create ground fixture
         PolygonShape groundShape = new PolygonShape();
         groundShape.setAsBox(camera.viewportWidth / 2, 1); // Width of screen, very thin height
 
@@ -95,32 +95,25 @@ public class Level1 implements Screen {
         groundBody.createFixture(groundFixtureDef);
 
         groundShape.dispose();
+        createWorldBoundaries();
 
         Texture bgtexture = new Texture(Gdx.files.internal("Images/Level1-bg.jpg"));
-        bird1 = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 130, 220);
-        bird2 = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 110, 220);
-        bird3 = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, 90, 220);
+        bird1 = new RedBird(world, "Images/redBird.png",  0.15f, 130, 100);
+        bird2 = new RedBird(world, "Images/redBird.png",  0.15f, 110, 100);
+        bird3 = new RedBird(world, "Images/redBird.png",  0.15f, 90, 100);
 
-        pig1 = new Pig(world, "Images/pig1.png", "Pig1", 0.12f, 520, 360);
-        pig2 = new Pig(world, "Images/pig2.png", "Pig2", 0.12f, 520, 290);
+        pig1 = new Pig1(world, "Images/pig1.png",  0.12f, 438, 405,game);
         pigs.add(pig1);
-        pigs.add(pig2);
-        block1 = new Block(world, "Images/blockhorizontal.png", "BlockSetup", 0.35f, 437, 330);
-        block2 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f, 480, 180);
-        block3 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.35f, 520, 180);
-        block4 = new Block(world, "Images/v.png", "BlockSetup", 0.3f, 430, 10);
-        block5 = new Block(world, "Images/v.png", "BlockSetup", 0.3f, 470, 10);
-        block6 = new Block(world, "Images/h.png", "BlockSetup", 0.4f, 415, 250);
-        block7 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.48f, 460, 90);
-        block8 = new Block(world, "Images/blockvertical.png", "BlockSetup", 0.48f, 550, 90);
+        block1 = new WoodBlock(world, "Images/vWNew.png",  0.3f, 400, 305,game);
+        block2 = new WoodBlock(world, "Images/vWNew.png",  0.3f, 480, 305,game);
+        block3 = new WoodBlock(world, "Images/hWNew.png",  0.3f, 445, 395,game);
+        block4 = new WoodBlock(world, "Images/wTri.png",  0.3f, 400, 405,game);
+        block5 = new WoodBlock(world, "Images/wTri.png", 0.3f, 480, 405,game);
         blocks.add(block1);
         blocks.add(block2);
         blocks.add(block3);
         blocks.add(block4);
         blocks.add(block5);
-        blocks.add(block6);
-        blocks.add(block7);
-        blocks.add(block8);
         Texture Catapult = new Texture(Gdx.files.internal("Images/Catapultimg.png"));
         Texture pauseG = new Texture(Gdx.files.internal("Images/Pause.png"));
         Texture winIcon = new Texture(Gdx.files.internal("Images/win.png"));
@@ -130,6 +123,18 @@ public class Level1 implements Screen {
         birdQueue.add(bird1);
         birdQueue.add(bird2);
         birdQueue.add(bird3);
+        for(Bird b:birdQueue){
+            gameObjects.add(b);
+//            objectsToDestroy.add(b);
+        }
+        for(Block bl:blocks){
+            gameObjects.add(bl);
+//            objectsToDestroy.add(bl);
+        }
+        for(Pig piggie:pigs){
+            gameObjects.add(piggie);
+//            objectsToDestroy.add(piggie);
+        }
 
         // Initialize bird queue and store initial positions
         int i = 0;
@@ -139,7 +144,7 @@ public class Level1 implements Screen {
             initialBirdY[i] = b.getY();
             i++;
         }
-
+//yaha pe ui skin wala daal na hai
         // Playing game sound
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("Sounds/gamePlay.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
@@ -158,7 +163,7 @@ public class Level1 implements Screen {
         winPage.setScale(0.15f);
         losePage.setScale(0.15f);
 
-        catapult.setPosition(0, -48);
+        catapult.setPosition(0, -100);
         pauseGame.setPosition(-150, 270);
         winPage.setPosition(360, 275);
         losePage.setPosition(410, 285);
@@ -169,68 +174,53 @@ public class Level1 implements Screen {
         //  world.setContactListener(new CollisionContactListener());
     }
 
+    private void createWorldBoundaries() {
+        BodyDef leftWallDef = new BodyDef();
+        leftWallDef.position.set(0 / PIXELS_TO_METERS, Gdx.graphics.getHeight() / (2 * PIXELS_TO_METERS));
+        Body leftWall = world.createBody(leftWallDef);
 
+        PolygonShape leftWallShape = new PolygonShape();
+        leftWallShape.setAsBox(1 / PIXELS_TO_METERS, Gdx.graphics.getHeight() / (2 * PIXELS_TO_METERS));
+
+        FixtureDef leftWallFixture = new FixtureDef();
+        leftWallFixture.shape = leftWallShape;
+        leftWallFixture.friction = 0.5f;
+        leftWall.createFixture(leftWallFixture);
+        leftWallShape.dispose();
+
+
+        BodyDef rightWallDef = new BodyDef();
+        rightWallDef.position.set(Gdx.graphics.getWidth() / PIXELS_TO_METERS, Gdx.graphics.getHeight() / (2 * PIXELS_TO_METERS));
+        Body rightWall = world.createBody(rightWallDef);
+
+        PolygonShape rightWallShape = new PolygonShape();
+        rightWallShape.setAsBox(1 / PIXELS_TO_METERS, Gdx.graphics.getHeight() / (2 * PIXELS_TO_METERS));
+
+        FixtureDef rightWallFixture = new FixtureDef();
+        rightWallFixture.shape = rightWallShape;
+        rightWallFixture.friction = 0.5f;
+        rightWall.createFixture(rightWallFixture);
+        rightWallShape.dispose();
+    }
+
+    private void enforceScreenBoundaries() {
+        for (Block block : blocks) {
+            Body blockBody = block.getBlockBody();
+            if (blockBody != null) {
+                Vector2 position = blockBody.getPosition();
+
+                float screenWidthMeters = Gdx.graphics.getWidth() / PIXELS_TO_METERS;
+                float screenHeightMeters = Gdx.graphics.getHeight() / PIXELS_TO_METERS;
+
+                if (position.x < 0) blockBody.setTransform(0, position.y, blockBody.getAngle());
+                if (position.x > screenWidthMeters) blockBody.setTransform(screenWidthMeters, position.y, blockBody.getAngle());
+            }
+        }
+    }
 
 
     @Override
     public void show() {
-    }
-
-
-    private void swapBirdsOnCatapult(Bird currentBird, Bird newBird) {
-        if (currentBird == null || newBird == null) return;
-
-        // Store current bird's initial position and body properties
-        float currentBirdX = currentBird.getBirdBody().getPosition().x * Bird.PIXELS_TO_METERS;
-        float currentBirdY = currentBird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS;
-        float currentBirdAngle = currentBird.getBirdBody().getAngle();
-        Vector2 currentBirdVelocity = currentBird.getBirdBody().getLinearVelocity();
-        float currentBirdAngularVelocity = currentBird.getBirdBody().getAngularVelocity();
-
-        // Store new bird's initial position and body properties
-        float newBirdX = newBird.getBirdBody().getPosition().x * Bird.PIXELS_TO_METERS;
-        float newBirdY = newBird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS;
-        float newBirdAngle = newBird.getBirdBody().getAngle();
-        Vector2 newBirdVelocity = newBird.getBirdBody().getLinearVelocity();
-        float newBirdAngularVelocity = newBird.getBirdBody().getAngularVelocity();
-
-        // Swap body positions and properties
-        currentBird.getBirdBody().setTransform(
-            newBird.getBirdBody().getPosition().x,
-            newBird.getBirdBody().getPosition().y,
-            newBird.getBirdBody().getAngle()
-//            newBirdX / Bird.PIXELS_TO_METERS,
-//            newBirdY / Bird.PIXELS_TO_METERS,
-//            newBirdAngle
-        );
-        currentBird.getBirdBody().setLinearVelocity(newBird.getBirdBody().getLinearVelocity());
-        currentBird.getBirdBody().setAngularVelocity(newBird.getBirdBody().getAngularVelocity());
-        currentBird.getBirdBody().setGravityScale(0);
-
-        newBird.getBirdBody().setTransform(
-            currentBirdX / Bird.PIXELS_TO_METERS,
-            currentBirdY / Bird.PIXELS_TO_METERS,
-            currentBirdAngle
-        );
-        newBird.getBirdBody().setLinearVelocity(currentBirdVelocity);
-        newBird.getBirdBody().setAngularVelocity(currentBirdAngularVelocity);
-        newBird.getBirdBody().setGravityScale(1);
-
-        // Update sprite positions to match new body positions
-        currentBird.objectSprite.setPosition(newBird.getBirdBody().getPosition().x * Bird.PIXELS_TO_METERS,
-            newBird.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS);
-        newBird.objectSprite.setPosition(currentBirdX, currentBirdY);
-
-        // Remove the new bird from the queue
-        birdQueue.remove(newBird);
-
-        // Set the new bird as the current bird
-        this.currentBird = newBird;
-    }
-
-    private boolean isCollisionBetween(Class<?> class1, Class<?> class2, Object obj1, Object obj2) {
-        return (class1.isInstance(obj1) && class2.isInstance(obj2)) ||
-            (class1.isInstance(obj2) && class2.isInstance(obj1));
     }
 
     private void handleBirdSelection(float touchX, float touchY) {
@@ -254,7 +244,7 @@ public class Level1 implements Screen {
                     positionBirdOnCatapult(queuedBird);
 
                     // Move current bird back to queue position
-                    currentBird.getBirdBody().setType(BodyDef.BodyType.KinematicBody);
+                    currentBird.getBirdBody().setType(BodyDef.BodyType.DynamicBody);
                     currentBird.setPosition(tempPos.x, tempPos.y);
                     birdQueue.add(currentBird);
 
@@ -271,12 +261,15 @@ public class Level1 implements Screen {
 
     @Override
     public void render(float delta) {
+        super.update(delta);
+        updateObjectPos();
         world.step(delta, 6, 2);
-        pig1.lockPosition();
-        pig2.lockPosition();
+//        pig1.lockPosition();
+//        pig2.lockPosition();
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        enforceScreenBoundaries();
         // Update camera
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -284,7 +277,7 @@ public class Level1 implements Screen {
         handleDragInput();
 
         batch.begin();
-        bgSprite.draw(batch);
+        batch.draw(bgSprite, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         pauseGame.draw(batch);
 
         // Draw catapult base behind the bands
@@ -296,14 +289,14 @@ public class Level1 implements Screen {
             drawRubberBands();
         }
 
-        updateDestructions(delta);
+        //updateDestructions(delta);
 
         batch.begin();
         bird1.draw(batch);
         bird2.draw(batch);
         bird3.draw(batch);
         pig1.draw(batch);
-        pig2.draw(batch);
+//        pig2.draw(batch);
         winPage.draw(batch);
         losePage.draw(batch);
         block1.draw(batch);
@@ -311,51 +304,34 @@ public class Level1 implements Screen {
         block3.draw(batch);
         block4.draw(batch);
         block5.draw(batch);
-        block6.draw(batch);
-        block7.draw(batch);
-        block8.draw(batch);
+//        block6.draw(batch);
+//        block7.draw(batch);
+//        block8.draw(batch);
 
-        if (bird1.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird1, 0);
-        if (bird2.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird2, 1);
-        if (bird3.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird3, 2);
+//        if (bird1.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird1, 0);
+//        if (bird2.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird2, 1);
+//        if (bird3.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 45) resetBirdCompletely(bird3, 2);
 
         for (CollisionDestruction anim : activeAnimations) {
             anim.render(batch);
         }
 
         batch.end();
+        checkGameStatus();
 
         // Handle touch input for bird selection and launching
         if (Gdx.input.justTouched()) {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
+            handleBirdSelection(touchPos.x, touchPos.y);
 
-            // Check pause game button
             if (pauseGame.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 music_buff.stop();
                 playSound();
                 game.setScreen(new PauseGamePage(game));
                 return;
             }
-
-            // Check win page button
-            if (winPage.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
-                music_buff.stop();
-                playSound();
-                game.setScreen(new WinPage(game));
-                return;
-            }
-
-            // Check lose page button
-            if (losePage.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
-                music_buff.stop();
-                playSound();
-                game.setScreen(new LosePage(game));
-                return;
-            }
-
-            handleBirdSelection(touchPos.x, touchPos.y);
 
             // Bird selection and launching logic
             if (currentBird != null && isBirdTouched(currentBird, touchPos.x, touchPos.y)) {
@@ -367,7 +343,38 @@ public class Level1 implements Screen {
                 handleDragInput();
             }
         }
+    }
+    private void checkGameStatus() {
+        if (!allBirdsLaunched) {
+            // Check if all birds have been launched
+            if (currentBird == null && birdQueue.isEmpty()) {
+                allBirdsLaunched = true;
+            }
+            return;
+        }
+        boolean allPigsDead = true;
+        for (Pig pig : pigs) {
+            if (pig.getHealth() > 0) {
+                allPigsDead = false;
+                break;
+            }
+        }
 
+        if (allPigsDead) {
+            // All pigs are dead - move to win page
+            music_buff.stop();
+            game.setScreen(new WinPage(game));
+        } else {
+            // Pigs remain - move to lose page
+            music_buff.stop();
+            game.setScreen(new LosePage(game));
+        }
+    }
+    private void updateObjectPos() {
+        // Safe updates before physics step
+        for (GameObject obj : gameObjects) {
+            obj.update();
+        }
     }
 
     public void addDestructionAnimation(float x, float y, float scale) {
@@ -375,7 +382,10 @@ public class Level1 implements Screen {
     }
 
     public void markForDestruction(GameObject object) {
-        objectsToDestroy.add(object);
+        if (object.isAlive()) {
+            objectsToDestroy.add(object);
+            addDestructionAnimation(object.getX(), object.getY(), object.getSize());
+        }
     }
 
     private void updateDestructions(float delta) {
@@ -400,31 +410,24 @@ public class Level1 implements Screen {
         objectsToDestroy.clear();
     }
 
+    @Override
+    protected void restoreGameObjects(SaveData loadedGameState) {
+
+    }
+
     public void update(float deltaTime) {
-        // Update blocks
-        for (Block block : blocks) {
-            block.update(deltaTime);
-        }
-
-        // Update pigs
-        for (Pig pig : pigs) {
-            pig.update(deltaTime);
-        }
-
-        // For pigs
-        Iterator<Pig> pigIterator = pigs.iterator();
-        while (pigIterator.hasNext()) {
-            Pig pig = pigIterator.next();
-            if (pig == null || pig.getPigBody() == null) {
-                pigIterator.remove();
+        // Defer body updates and removals
+        for (int i = blocks.size() - 1; i >= 0; i--) {
+            Block block = blocks.get(i);
+            if (block == null || block.getBlockBody() == null) {
+                blocks.remove(block);
             }
         }
-        // For pigs
-        Iterator<Block> blockIterator = blocks.iterator();
-        while (blockIterator.hasNext()) {
-            Block b = blockIterator.next();
-            if (b == null || b.getBlockBody() == null) {
-                pigIterator.remove();
+
+        for (int i = pigs.size() - 1; i >= 0; i--) {
+            Pig pig = pigs.get(i);
+            if (pig == null || pig.getPigBody() == null) {
+                pigs.remove(pig);
             }
         }
     }
@@ -433,8 +436,6 @@ public class Level1 implements Screen {
 
     private void handleDragInput() {
         if (currentBird == null) return;
-
-        // Get mouse/touch position and convert to world coordinates
         Vector3 touchPos = new Vector3();
         touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         camera.unproject(touchPos);
@@ -445,8 +446,10 @@ public class Level1 implements Screen {
                 // Only start dragging if touching near the bird
                 float birdX = currentBird.getBirdBody().getPosition().x * PIXELS_TO_METERS;
                 float birdY = currentBird.getBirdBody().getPosition().y * PIXELS_TO_METERS;
+                float touchRadius = 50f;
 
-                if (Vector2.dst(birdX, birdY, touchPos.x, touchPos.y) < 50) {
+
+                if (Vector2.dst(birdX, birdY, touchPos.x, touchPos.y) < touchRadius) {
                     isDragging = true;
                     dragStart.set(touchPos.x, touchPos.y);
                 }
@@ -484,7 +487,16 @@ public class Level1 implements Screen {
                     currentBird.getBirdBody().getPosition().y * PIXELS_TO_METERS
                 );
             }
+            float minBirdY = 100f; // Adjust based on your screen layout
+            if (currentBird.getBirdBody().getPosition().y * PIXELS_TO_METERS < minBirdY) {
+                currentBird.getBirdBody().setTransform(
+                    currentBird.getBirdBody().getPosition().x,
+                    minBirdY / PIXELS_TO_METERS,
+                    0
+                );
+            }
         } else if (isDragging) {
+            gameStarted=true;
             // Mouse/touch released, launch the bird
             isDragging = false;
 
@@ -591,27 +603,6 @@ public class Level1 implements Screen {
     }
 
 
-    private void resetBirdCompletely(Bird bird, int index) {
-        // Remove the bird from the world
-        world.destroyBody(bird.getBirdBody());
-
-        // Recreate the bird with its original parameters
-        Bird newBird = new Bird(world, "Images/redBird.png", "RedBird", 0.15f, initialBirdX[index], initialBirdY[index]);
-
-        // Update the corresponding bird reference
-        if (index == 0) bird1 = newBird;
-        else if (index == 1) bird2 = newBird;
-        else bird3 = newBird;
-
-        // Add back to the queue if not already in it
-        if (!birdQueue.contains(newBird)) {
-            birdQueue.add(newBird);
-        }
-
-        // Dispose of the old bird to prevent memory leaks
-        bird.dispose();
-    }
-
     private void selectBird() {
         // If there are birds in the queue, select the next one
         if (!birdQueue.isEmpty()) {
@@ -627,7 +618,7 @@ public class Level1 implements Screen {
         if (bird == null) return;
 
         bird.getBirdBody().setType(BodyDef.BodyType.KinematicBody);
-        bird.setPosition(catapultX, catapultY);
+        bird.setPosition(catapultX, catapultY+30f);
         bird.getBirdBody().setLinearVelocity(0, 0);
         bird.getBirdBody().setAngularVelocity(0);
         bird.getBirdBody().setGravityScale(0);
@@ -669,15 +660,11 @@ public class Level1 implements Screen {
         bird2.dispose();
         bird3.dispose();
         pig1.dispose();
-        pig2.dispose();
         block1.dispose();
         block2.dispose();
         block3.dispose();
         block4.dispose();
         block5.dispose();
-        block6.dispose();
-        block7.dispose();
-        block8.dispose();
         catapult.getTexture().dispose();
         winPage.getTexture().dispose();
         losePage.getTexture().dispose();
