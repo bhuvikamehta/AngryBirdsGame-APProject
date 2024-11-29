@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import io.github.AngryBirdsGame.AngryBirds;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.math.Vector3;
@@ -60,7 +61,10 @@ public class Level1 extends Level implements Screen {
     private ArrayList<Pig> pigs;
     private boolean gameStarted = false;
     private boolean allBirdsLaunched=false;
-
+    public Array<Vector2> trajectoryPoints;
+    private boolean birdLaunched = false;
+    private Stage stage;
+    private Skin skin;
 
     public Level1(AngryBirds game) {
         super();
@@ -145,6 +149,16 @@ public class Level1 extends Level implements Screen {
             i++;
         }
 //yaha pe ui skin wala daal na hai
+
+        stage = new Stage(new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()), batch);
+        Gdx.input.setInputProcessor(stage);
+
+        // Initialize the skin (UI assets)
+        skin = new Skin(Gdx.files.internal("assets/uiskin.json"));
+
+        // Initialize trajectory points
+        trajectoryPoints = new Array<>();
+
         // Playing game sound
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("Sounds/gamePlay.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
@@ -172,6 +186,40 @@ public class Level1 extends Level implements Screen {
         shapeRenderer.setAutoShapeType(true);
 
         //  world.setContactListener(new CollisionContactListener());
+    }
+
+    public void calculateTrajectory(Vector2 start, Vector2 velocity, int steps) {
+        trajectoryPoints.clear();
+        velocity.scl(0.8f); // Scale velocity down to shorten trajectory
+
+        float timeStep = 1 / 60f; // Time step for physics simulation
+        Vector2 gravity = world.getGravity(); // Gravity vector
+
+        for (int i = 0; i < steps; i++) {
+            float t = i * timeStep;
+            float x = start.x + velocity.x * t;
+            float y = start.y + velocity.y * t + 0.5f * gravity.y * t * t;
+            trajectoryPoints.add(new Vector2(x, y));
+        }
+    }
+
+    private void renderTrajectory() {
+        if (birdLaunched || currentBird == null) {
+            return; // Don't draw trajectory if the bird has already been launched
+        }
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.RED);
+
+        for (int i = 1; i < trajectoryPoints.size; i++) {
+            Vector2 p1 = trajectoryPoints.get(i - 1);
+            Vector2 p2 = trajectoryPoints.get(i);
+            shapeRenderer.line(p1.x * PIXELS_TO_METERS, p1.y * PIXELS_TO_METERS,
+                p2.x * PIXELS_TO_METERS, p2.y * PIXELS_TO_METERS);
+        }
+
+        shapeRenderer.end();
     }
 
     private void createWorldBoundaries() {
@@ -287,6 +335,17 @@ public class Level1 extends Level implements Screen {
         // Draw rubber bands if dragging
         if (isDragging && currentBird != null) {
             drawRubberBands();
+            Vector2 start = new Vector2(
+                currentBird.getBirdBody().getPosition().x,
+                currentBird.getBirdBody().getPosition().y
+            );
+            Vector2 velocity = new Vector2(
+                 catapultX - dragCurrent.x,
+                  catapultY-dragCurrent.y
+            ).scl(LAUNCH_FORCE_MULTIPLIER);
+
+            calculateTrajectory(start, velocity, 15);
+            renderTrajectory();
         }
 
         //updateDestructions(delta);
