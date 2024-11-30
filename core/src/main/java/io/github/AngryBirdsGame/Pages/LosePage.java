@@ -98,7 +98,17 @@ public class LosePage implements Screen{
             if (tryAgain.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 //music_buff.stop();
                 playSound();
-                game.setScreen(new Level1(game));
+                int n=game.getCurrentLevel();
+                if(n==1){
+                    game.setScreen(new Level1(game));
+                }
+                else if(n==2){
+                    game.setScreen(new Level2(game));
+                }
+                else if(n==3){
+                    game.setScreen(new Level3(game));
+                }
+
             } else if (goToLevels.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 music_buff.stop();
                 playSound();
