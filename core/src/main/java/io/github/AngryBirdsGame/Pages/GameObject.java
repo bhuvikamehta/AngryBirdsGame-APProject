@@ -17,6 +17,8 @@ public abstract class GameObject {
     protected Body body;
     protected World world;
     protected static final float PIXELS_TO_METERS = 100f;
+    protected boolean isAlive = true;
+    protected boolean isDamaged = false;
 
     public GameObject(World world, String texturePath, float size, float posX, float posY) {
         this.world=world;
@@ -29,10 +31,29 @@ public abstract class GameObject {
 
     }
 
+    public boolean isAlive() {
+        return isAlive;
+    }
+
+    public void setAlive(boolean alive) {
+        this.isAlive = alive;
+    }
+
+    public boolean isDamaged() {
+        return isDamaged;
+    }
+
+    public void setDamaged(boolean damaged) {
+        this.isDamaged = damaged;
+    }
+
+
     //later we will have to add for physics objects
 
     public abstract void updatePos();
     public abstract void render();
+    public abstract void takeDamage(float amount);
+    public abstract void update();
 
     protected void createBody(BodyDef.BodyType bodyType) {
         BodyDef bodyDef = new BodyDef();
