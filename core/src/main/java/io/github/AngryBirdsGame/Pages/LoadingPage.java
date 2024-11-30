@@ -34,12 +34,12 @@ public class LoadingPage implements Screen{
         bgSprite.setSize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         bgSprite.setPosition(0, 0);
     }
-    
+
     @Override
     public void show() {
 
     }
-    
+
     @Override
     public void render(float v) {
         timeElapsed += v;
