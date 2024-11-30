@@ -6,6 +6,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import io.github.AngryBirdsGame.AngryBirds;
@@ -21,8 +22,8 @@ public class MainMenuPage implements Screen {
     private Music music_buff, icon_sound;
     private boolean snd = true;
     private Preferences preferences;
-    private float touchCooldown = 0.5f;
-    private float lastTouchTime = 0;  
+    private float touchCooldown = 0.5f;  // 0.5 seconds cooldown
+    private float lastTouchTime = 0;  // Track last touch time
 
     public MainMenuPage(AngryBirds angrybirdsgame) {
         this.game = angrybirdsgame;
@@ -77,32 +78,67 @@ public class MainMenuPage implements Screen {
 
         lastTouchTime+=delta;
         if (Gdx.input.isTouched() && ( lastTouchTime > touchCooldown)) {
-            lastTouchTime = 0; 
+            lastTouchTime = 0;
 
             if (isButtonTouched(touchX, touchY, startNewGame.getBoundingRectangle())) {
                 handleButtonClick(() -> {
-                    preferences.putInteger("currentLevel", 1); 
+                    preferences.putInteger("currentLevel", 1);  // Reset to level 1
                     preferences.flush();
                     game.setScreen(new SelectLevelPage(game, 1));
                 });
             } else if (isButtonTouched(touchX, touchY, continuePreviousGame.getBoundingRectangle())) {
                 handleButtonClick(() -> {
-                    int savedLevel = preferences.getInteger("currentLevel", 1);
-                    game.setScreen(new SelectLevelPage(game, savedLevel));
+                    SaveGameData saveGameData = new SaveGameData();
+                    SaveData savedGame = null;
+                    for (int level = 1; level <= 3; level++) {
+                        SaveData potentialSave = saveGameData.loadGame(level);
+                        if (potentialSave != null) {
+                            savedGame = potentialSave;
+                            break;
+                        }
+                    }
+                    if (savedGame != null) {
+                        int savedLevel = savedGame.getCurrentLevel();
+                        float savedScore = savedGame.getPlayerScore();
+                        game.setCurrentLevel(savedLevel);
+
+                        switch (savedLevel) {
+                            case 1:
+                                game.setScreen(new Level1(game));
+                                break;
+                            case 2:
+                                game.setScreen(new Level2(game));
+                                break;
+                            case 3:
+                                game.setScreen(new Level3(game));
+                                break;
+                            default:
+                                game.setScreen(new Level1(game));
+                                break;
+                        }
+                    } else {
+
+                        game.setScreen(new Level1(game));
+                    }
+
                 });
             } else if (isButtonTouched(touchX, touchY, exitGame.getBoundingRectangle())) {
-                Gdx.app.exit();  // Exit game
+                Gdx.app.exit();
             }
         }
     }
 
     private boolean isButtonTouched(float x, float y, Rectangle buttonBounds) {
-            return buttonBounds.contains(x,y);
+        return buttonBounds.contains(x,y);
+//        float scaledWidth = button.getWidth() * button.getScaleX();
+//        float scaledHeight = button.getHeight() * button.getScaleY();
+//        return x >= button.getX() && x <= (button.getX() + scaledWidth) &&
+//            y >= button.getY() && y <= (button.getY() + scaledHeight);
     }
 
     private void handleButtonClick(Runnable action) {
         if (snd) {
-            icon_sound.play();  
+            icon_sound.play();  // Play sound once per tap
             snd = false;
         }
         action.run();
@@ -122,19 +158,42 @@ public class MainMenuPage implements Screen {
         title.getTexture().dispose();
     }
 
-    @Override public void show() {
-        
+    // Other overridden methods are unchanged
+    @Override public void show() {}
+    @Override public void resize(int width, int height) {}
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
+
+    public Sprite getBgSprite() {
+        return bgSprite;
     }
-    @Override public void resize(int width, int height) {
-        
+
+    public Sprite getStartNewGameSprite() {
+        return startNewGame;
     }
-    @Override public void pause() {
-        
+
+    public Sprite getContinuePreviousGameSprite() {
+        return continuePreviousGame;
     }
-    @Override public void resume() {
-        
+
+    public Sprite getExitGameSprite() {
+        return exitGame;
     }
-    @Override public void hide() {
-        
+
+    public Sprite getTitleSprite() {
+        return title;
+    }
+
+    public Rectangle getStartNewGameBounds() {
+        return startNewGame.getBoundingRectangle();
+    }
+
+    public Rectangle getContinuePreviousGameBounds() {
+        return continuePreviousGame.getBoundingRectangle();
+    }
+
+    public Rectangle getExitGameBounds() {
+        return exitGame.getBoundingRectangle();
     }
 }
