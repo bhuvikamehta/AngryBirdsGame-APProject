@@ -31,7 +31,7 @@ public class PauseGamePage implements Screen {
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         Texture bgTexture = new Texture(Gdx.files.internal("Images/pausepage_bg.jpeg")); //images to be set abhi
-        Texture resumeIcon=new Texture(Gdx.files.internal("images/resume-pause.png"));
+//        Texture resumeIcon=new Texture(Gdx.files.internal("images/resume-pause.png"));
         Texture restartIcon=new Texture(Gdx.files.internal("Images/restart-pause.png"));
         Texture goToMainMenuIcon=new Texture(Gdx.files.internal("Images/goMM.png"));
         Texture saveAndExitIcon=new Texture(Gdx.files.internal("Images/seMM.png"));
@@ -42,19 +42,19 @@ public class PauseGamePage implements Screen {
         if (!music_buff.isPlaying()) music_buff.play();
 
         bgSprite = new Sprite(bgTexture);
-        resume=new Sprite(resumeIcon);
+//        resume=new Sprite(resumeIcon);
         restart=new Sprite(restartIcon);
         goToMainMenu=new Sprite(goToMainMenuIcon);
         saveAndExit=new Sprite(saveAndExitIcon);
 
-        resume.setScale(0.4f);
+//        resume.setScale(0.4f);
         restart.setScale(0.4f);
         goToMainMenu.setScale(0.4f);
         saveAndExit.setScale(0.4f);
 
-        resume.setPosition(-50,240);
-        restart.setPosition(-50,170);
-        goToMainMenu.setPosition(-50,100);
+//        resume.setPosition(-50,240);
+        restart.setPosition(-50,230);
+        goToMainMenu.setPosition(-50,130);
         saveAndExit.setPosition(-50,30);
 
     }
@@ -72,7 +72,7 @@ public class PauseGamePage implements Screen {
         batch.begin();
         batch.draw(bgSprite, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         restart.draw(batch);
-        resume.draw(batch);
+//        resume.draw(batch);
         goToMainMenu.draw(batch);
         saveAndExit.draw(batch);
 
@@ -89,20 +89,9 @@ public class PauseGamePage implements Screen {
             Vector3 touchPos = new Vector3();
             touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(touchPos);
-             int currL=game.getCurrentLevel();
+            int currL=game.getCurrentLevel();
             // Check each sprite's bounds
-            if (resume.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
-                playSound();
-                if(currL==1){
-                    game.setScreen(new Level1(game));
-                }
-                else if(currL==2){
-                    game.setScreen(new Level2(game));
-                }
-                else{
-                    game.setScreen(new Level3(game));
-                }
-            } else if (restart.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
+              if (restart.getBoundingRectangle().contains(touchPos.x, touchPos.y)) {
                 playSound();
                 if(currL==1){
                     game.setScreen(new Level1(game));
@@ -175,7 +164,7 @@ public class PauseGamePage implements Screen {
         music_buff.dispose();
         icon_sound.dispose();
         bgSprite.getTexture().dispose();
-        resume.getTexture().dispose();
+//        resume.getTexture().dispose();
         restart.getTexture().dispose();
         goToMainMenu.getTexture().dispose();
         saveAndExit.getTexture().dispose();
