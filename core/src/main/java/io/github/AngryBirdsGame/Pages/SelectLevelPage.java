@@ -26,6 +26,8 @@ public class SelectLevelPage implements Screen{
     private int maxLevels = 5;
     private float touchCooldown = 0.5f;  // 0.5 seconds cooldown
     private float lastTouchTime = 0;
+    private boolean isLevel1Won;
+    private boolean isLevel2Won;
 
 
     public SelectLevelPage(AngryBirds game, int currentLevel) {
@@ -36,8 +38,8 @@ public class SelectLevelPage implements Screen{
         Texture l1=new Texture(Gdx.files.internal("Images/l1.png"));
         Texture l2=new Texture(Gdx.files.internal("Images/l2.png"));
         Texture l3=new Texture(Gdx.files.internal("Images/l3.png"));
-       Texture exit=new Texture(Gdx.files.internal("Images/backimg.png"));
-     //  Texture lock=new Texture(Gdx.files.internal("Images/lock.png"));
+        Texture exit=new Texture(Gdx.files.internal("Images/backimg.png"));
+        //  Texture lock=new Texture(Gdx.files.internal("Images/lock.png"));
         Texture lock=new Texture(Gdx.files.internal("Images/LockedLevel.png"));
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("Sounds/bg.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
@@ -49,7 +51,7 @@ public class SelectLevelPage implements Screen{
         level1=new Sprite(l1);
         level2=new Sprite(l2);
         level3=new Sprite(l3);
-       // lockedicon=new Sprite(lock);
+        // lockedicon=new Sprite(lock);
         exitGame=new Sprite(exit);
         lockedGame1=new Sprite(lock);
         lockedGame2=new Sprite(lock);
@@ -57,7 +59,7 @@ public class SelectLevelPage implements Screen{
         level1.setScale(0.15f);
         level2.setScale(0.15f);
         level3.setScale(0.15f);
-       // lockedicon.setScale(0.2f);
+        // lockedicon.setScale(0.2f);
         exitGame.setScale(0.2f);
         lockedGame1.setScale(.9f);
         lockedGame2.setScale(.9f);
@@ -67,6 +69,8 @@ public class SelectLevelPage implements Screen{
         exitGame.setPosition(-140, -120);
         lockedGame1.setPosition(300, 165);
         lockedGame2.setPosition(495, 150);
+//        isLevel1Won=preferences.getBoolean("Level1Completed", false);
+//        isLevel2Won=preferences.getBoolean("Level2Completed", false);
 
 
     }
@@ -84,6 +88,18 @@ public class SelectLevelPage implements Screen{
         batch.begin();
         batch.draw(bgSprite, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         level1.draw(batch);
+//        if(isLevel1Won){
+//            level2.draw(batch);
+//        }else{
+//            lockedGame1.draw(batch);
+//        }
+//        if (isLevel1Won && isLevel2Won){
+//            level3.draw(batch);
+//        }
+//        else{
+//            lockedGame2.draw(batch);
+//        }
+//
         level2.draw(batch);
         level3.draw(batch);
         exitGame.draw(batch);
@@ -107,25 +123,50 @@ public class SelectLevelPage implements Screen{
                     preferences.flush();
                     game.setScreen(new Level1(game));
                 });
-            } else if (isButtonTouched(touchX, touchY, level2.getBoundingRectangle())) {
+            }
+            else if (isButtonTouched(touchX, touchY, level2.getBoundingRectangle())) {
+                //if(isLevel1Won)elselockedLevelMessage
                 handleButtonClick(() -> {
                     music_buff.stop();
                     int savedLevel = preferences.getInteger("currentLevel", 2);
                     game.setScreen(new Level2(game));
                 });
-            } else if (isButtonTouched(touchX, touchY, level3.getBoundingRectangle())) {
+            }
+            else if (isButtonTouched(touchX, touchY, level3.getBoundingRectangle())) {
+                //if(isLevel1Won&&islevel2Won)elselockedLevelMessage
                 handleButtonClick(() -> {
                     music_buff.stop();
                     preferences.putInteger("currentLevel", 3);
                     preferences.flush();
                     game.setScreen(new Level3(game));
                 });
-            } else if (isButtonTouched(touchX, touchY, exitGame.getBoundingRectangle())) {
+            }
+            else if (isButtonTouched(touchX, touchY, exitGame.getBoundingRectangle())) {
                 handleButtonClick(() -> {
                     game.setScreen(new MainMenuPage(game));
                 });            }
         }
     }
+
+    private void lockedLevelMessage(){
+        if(snd){
+            System.out.println("Level is locked. Complete previous levels first.");
+        }
+    }
+
+
+    //call after successfully completing level
+    public void unlockNext(int currLevel) {
+        Preferences preferences = Gdx.app.getPreferences("AngryBirdsProgress");
+
+        int unlockedLevel = preferences.getInteger("unlockedLevel", 1);
+
+        if (currLevel > unlockedLevel) {
+            preferences.putInteger("unlockedLevel", currLevel);
+            preferences.flush();
+        }
+    }
+
 
     private boolean isButtonTouched(float x, float y, Rectangle buttonBounds) {
         return buttonBounds.contains(x, y);
