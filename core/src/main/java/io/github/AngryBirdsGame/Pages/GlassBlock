@@ -1,0 +1,33 @@
+package io.github.AngryBirdsGame.Pages;
+
+import com.badlogic.gdx.physics.box2d.World;
+import io.github.AngryBirdsGame.AngryBirds;
+
+public class GlassBlock extends Block{
+    private float health;
+    private float durability;
+    public GlassBlock(World world, String texturePath, float scale, float posX, float posY, AngryBirds g) {
+        super(world, texturePath, "glass", scale, posX, posY, g);
+    }
+    @Override
+    protected void initBlockProperties() {
+        this.health=3f;
+        this.durability=100f;
+
+    }
+    @Override
+    protected float getDensity() {
+        return 20f;
+    }
+
+    @Override
+    protected float getFriction() {
+        return 0.2f;
+    }
+
+    @Override
+    protected float getRestitution() {
+        return 0.0f;
+    }
+
+}
