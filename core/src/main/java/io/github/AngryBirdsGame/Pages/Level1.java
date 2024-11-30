@@ -28,7 +28,7 @@ public class Level1 extends Level implements Screen {
     private AngryBirds game;
     private boolean snd = true;
     private SpriteBatch batch;
-    private Sprite bgSprite, pauseGame, exitGame, catapult, winPage, losePage, lockedGame;
+    private Sprite bgSprite, pauseGame, exitGame, catapult, lockedGame;
     private Bird bird1, bird2, bird3;
     private Pig pig1, pig2;
     private Block block1, block2, block3, block4, block5, block6, block7, block8;
@@ -171,18 +171,18 @@ public class Level1 extends Level implements Screen {
         bgSprite = new Sprite(bgtexture);
         pauseGame = new Sprite(pauseG);
         catapult = new Sprite(Catapult);
-        winPage = new Sprite(winIcon);
-        losePage = new Sprite(loseIcon);
+//        winPage = new Sprite(winIcon);
+//        losePage = new Sprite(loseIcon);
 
         pauseGame.setScale(0.2f);
         catapult.setScale(0.2f);
-        winPage.setScale(0.15f);
-        losePage.setScale(0.15f);
+//        winPage.setScale(0.15f);
+//        losePage.setScale(0.15f);
 
         catapult.setPosition(0, -100);
         pauseGame.setPosition(-150, 270);
-        winPage.setPosition(360, 275);
-        losePage.setPosition(410, 285);
+//        winPage.setPosition(360, 275);
+//        losePage.setPosition(410, 285);
 
         shapeRenderer = new ShapeRenderer();
         shapeRenderer.setAutoShapeType(true);
@@ -358,8 +358,8 @@ public class Level1 extends Level implements Screen {
         bird3.draw(batch);
         pig1.draw(batch);
 //        pig2.draw(batch);
-        winPage.draw(batch);
-        losePage.draw(batch);
+//        winPage.draw(batch);
+//        losePage.draw(batch);
         block1.draw(batch);
         block2.draw(batch);
         block3.draw(batch);
@@ -757,8 +757,8 @@ public class Level1 extends Level implements Screen {
         block4.dispose();
         block5.dispose();
         catapult.getTexture().dispose();
-        winPage.getTexture().dispose();
-        losePage.getTexture().dispose();
+//        winPage.getTexture().dispose();
+//        losePage.getTexture().dispose();
         for (CollisionDestruction anim : activeAnimations) {
             anim.dispose();
         }
