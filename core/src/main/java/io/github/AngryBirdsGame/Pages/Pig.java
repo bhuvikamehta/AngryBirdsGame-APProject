@@ -7,18 +7,20 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import io.github.AngryBirdsGame.AngryBirds;
 
-public class Pig extends GameObject  {
-
+public abstract class Pig extends GameObject  implements PhysicsBody{
     private String type;
     private Body pigie;
     private boolean isALive;
     private boolean isVisible;
-    private float health = 0.2f;
+    private float health;
     private boolean isDestroying = false;
+    private AngryBirds game;
+    //private Body pigBody;
 
 
-    public Pig(World world, String texturePath, String type, float scale, float posX, float posY) {
+    public Pig(World world, String texturePath, String type, float scale, float posX, float posY, AngryBirds g, float health) {
         super(world, texturePath, scale, posX, posY);
         this.type=type;
         objectSprite.setScale(scale);
@@ -26,17 +28,27 @@ public class Pig extends GameObject  {
         createBody(BodyDef.BodyType.DynamicBody);
         this.isALive=true;
         this.isVisible=false;
-        createCircleFixture(1.0f, 1.0f, 0.5f);
-       // body.setUserData(this);
+        createCircleFixture(0.0f, 0.0f, 0.0f);
+        if (pigie != null) {
+            pigie.setUserData(this);
+        }
+        this.game=g;
+
+        pigie.setUserData(this);
+        this.health=health;
 
     }
 
 
-    public boolean isALive() {
+
+
+    public boolean getALive() {
+
         return isALive;
     }
 
     public void setALive(boolean ALive) {
+
         this.isALive = ALive;
     }
 
@@ -47,6 +59,35 @@ public class Pig extends GameObject  {
     public void setVisible(boolean visible){
         this.isVisible=visible;
     }
+
+    public void reduceHealth(float damage) {
+        this.health -= damage;
+        if (this.health <= 0) {
+            setALive(false);
+        }
+    }
+
+    public float getHealth(){
+        return this.health;
+    }
+
+    private void markDestruction() {
+        if (game != null && game.getCurrentLevel() != 0) {
+            if(game.getCurrentLevel()==1){
+                game.getLeve1().markForDestruction(this);
+            }
+            else if(game.getCurrentLevel()==2){
+                game.getLeve2().markForDestruction(this);
+            }
+            else if(game.getCurrentLevel()==3){
+                game.getLeve3().markForDestruction(this);
+            }
+
+
+        }
+    }
+
+
 
 
     public void jump(){
@@ -84,9 +125,11 @@ public class Pig extends GameObject  {
 
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
-        fixtureDef.density = 0.1f;      // Determines mass
-        fixtureDef.friction = 0.1f;   // Determines sliding resistance
-        fixtureDef.restitution = restitution; // Determines bounciness
+        fixtureDef.density = 0.0f;      // Determines mass
+        fixtureDef.friction = 750f;   // Determines sliding resistance
+        fixtureDef.restitution = 0.0f;// Determines bounciness
+//        body.setAngularDamping(0.5f);
+//        body.setLinearDamping(0.5f);
         pigie.createFixture(fixtureDef);
         shape.dispose();
     }
@@ -97,10 +140,10 @@ public class Pig extends GameObject  {
 
     public void draw(SpriteBatch batch) {
         objectSprite.setPosition(
-                pigie.getPosition().x * PIXELS_TO_METERS - objectSprite.getWidth() / 2,
-                pigie.getPosition().y * PIXELS_TO_METERS - objectSprite.getHeight() / 2
-            );
-            objectSprite.draw(batch);
+            getPigBody().getPosition().x * PIXELS_TO_METERS - objectSprite.getWidth() / 2,
+            getPigBody().getPosition().y * PIXELS_TO_METERS - objectSprite.getHeight() / 2
+        );
+        objectSprite.draw(batch);
     }
 
 
@@ -153,7 +196,7 @@ public class Pig extends GameObject  {
 
 
     public void dispose() {
-        objectSprite.getTexture().dispose();
+        destroyBody();
     }
 
     public Body getPigBody(){
@@ -162,10 +205,15 @@ public class Pig extends GameObject  {
 
 
     public void takeDamage(float damage) {
-        health -= damage;
-        if (health <= 0) {
-            isDestroying = true;
+        this.health -= damage;
+        if (this.health <= 0) {
+            this.setALive(false);
         }
+    }
+
+    @Override
+    public void update() {
+
     }
 
     public void update(float deltaTime) {
@@ -180,6 +228,14 @@ public class Pig extends GameObject  {
                 world.destroyBody(pigie);
                 pigie = null;
             }
+        }
+    }
+
+    @Override
+    public void destroyBody() {
+        if (pigie != null) {
+            world.destroyBody(pigie);
+            pigie = null;
         }
     }
 
