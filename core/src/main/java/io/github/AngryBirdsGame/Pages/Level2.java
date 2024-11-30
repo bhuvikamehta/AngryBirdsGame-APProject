@@ -17,6 +17,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.Array;
 import io.github.AngryBirdsGame.AngryBirds;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -28,8 +29,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class Level2 extends Level implements Screen{
-    private static final short BIRD_CATEGORY = 0x0002;
-    private static final short OBSTACLE_CATEGORY= 0x0004;
     private AngryBirds game;
     private boolean snd = true;
     private SpriteBatch batch;
@@ -73,13 +72,11 @@ public class Level2 extends Level implements Screen{
     private Skin skin;
     private Label scoreLabel;
     private int score=0;
-    private Array<Vector2> trajectoryPoints;
+    public Array<Vector2> trajectoryPoints;
     private boolean birdLaunched = false;
-
-
-
-
-
+    private boolean allBirdsLaunched=false;
+    private float losePageTimer = 0f;
+    private static final float LOSE_PAGE_DELAY = 2f;
 
     public Level2(AngryBirds game){
         super();
@@ -110,7 +107,7 @@ public class Level2 extends Level implements Screen{
 
         FixtureDef groundFixtureDef = new FixtureDef();
         groundFixtureDef.shape = groundShape;
-        groundFixtureDef.friction = 0.3f;
+        groundFixtureDef.friction = 0.5f;
         groundBody.createFixture(groundFixtureDef);
 
         groundShape.dispose();
@@ -140,14 +137,14 @@ public class Level2 extends Level implements Screen{
         block16 = new SteelBlock(world, "Images/sTri.png",0.55f,590,530, game);
 //        block17 = new GlassBlock(world, "Images/glasstriangle.png",0.16f,390,1360, game);//260
 //        block18 = new GlassBlock(world, "Images/glasstriangle.png",0.16f,430,1360, game);
-//        pig1 = new Pig3(world, "Images/pig3.png",0.12f,530,740, game);
-//        pig2 = new Pig2(world, "Images/pig2.png",0.17f,575,740, game);
-//        pig3 = new Pig3(world, "Images/pig3.png",0.12f,485,178, game);
-//        pig4 = new Pig1(world, "Images/pig1.png",0.12f,530,178, game);
+//        pig1 = new Pig3(world, "Images/pig3.png",0.12f,560,170, game);
+        pig2 = new Pig2(world, "Images/pig2.png",0.17f,505,700, game);
+        pig3 = new Pig3(world, "Images/pig3.png",0.12f,470,170, game);
+        pig4 = new Pig1(world, "Images/pig1.png",0.12f,519,702, game);
 //        pigs.add(pig1);
-//        pigs.add(pig2);
-//        pigs.add(pig3);
-//        pigs.add(pig4);
+        pigs.add(pig2);
+        pigs.add(pig3);
+        pigs.add(pig4);
         blocks.add(block1);
         blocks.add(block2);
         blocks.add(block3);
@@ -195,16 +192,22 @@ public class Level2 extends Level implements Screen{
         Gdx.input.setInputProcessor(stage);
 
         // Initialize the skin (UI assets)
-        skin = new Skin(Gdx.files.internal("uiskin.json"));
+        skin = new Skin(Gdx.files.internal("assets/uiskin.json"));
 
         // Initialize trajectory points
         trajectoryPoints = new Array<>();
 
         // Create score label
-        scoreLabel = new Label("Score: 0", skin);
-        scoreLabel.setPosition(Gdx.graphics.getWidth() - 200, Gdx.graphics.getHeight() - 50);
-        stage.addActor(scoreLabel);
+//        scoreLabel = new Label("Score: 0", skin);
+//        scoreLabel.setPosition(Gdx.graphics.getWidth() - 200, Gdx.graphics.getHeight() - 50);
+////        stage.addActor(scoreLabel);
 
+//        // Create score button
+//        TextButton scoreButton = new TextButton("Score: " + score, skin);
+//        scoreButton.setPosition(Gdx.graphics.getWidth() - 200, Gdx.graphics.getHeight() - 100);
+//        scoreButton.setSize(100, 50);
+//        stage.addActor(scoreLabel);
+//        stage.addActor(scoreButton);
         music_buff = Gdx.audio.newMusic(Gdx.files.internal("Sounds/gamePlay.mp3"));
         icon_sound = Gdx.audio.newMusic(Gdx.files.internal("Sounds/tap.mp3"));
 
@@ -226,8 +229,10 @@ public class Level2 extends Level implements Screen{
 
     }
 
-    private void calculateTrajectory(Vector2 start, Vector2 velocity, int steps) {
+    public void calculateTrajectory(Vector2 start, Vector2 velocity, int steps) {
         trajectoryPoints.clear();
+        velocity.scl(0.8f); // Scale velocity down to shorten trajectory
+
         float timeStep = 1 / 60f; // Time step for physics simulation
         Vector2 gravity = world.getGravity(); // Gravity vector
 
@@ -573,20 +578,11 @@ public class Level2 extends Level implements Screen{
 
 
     private void selectBird() {
-        // If there are birds in the queue, select the next one
         if (!birdQueue.isEmpty()) {
             currentBird = birdQueue.poll();
             positionBirdOnCatapult(currentBird);
         } else {
-            // No more birds left
-            //checkGameStatus();
             currentBird = null;
-//            if(getRemPigs().size==0){
-//                game.setScreen(new WinPage(game));
-//            }
-//            else{
-//                game.setScreen(new LosePage(game));
-//            }
         }
     }
 
@@ -708,9 +704,11 @@ public class Level2 extends Level implements Screen{
                 dragCurrent.y - catapultY
             ).scl(LAUNCH_FORCE_MULTIPLIER);
 
-            calculateTrajectory(start, velocity, 30);
+            calculateTrajectory(start, velocity, 15);
             renderTrajectory();
-
+//            if (scoreLabel != null) {
+//                scoreLabel.setText("Score: " + score);
+//            }
 
         }
         // Update and draw UI
@@ -745,9 +743,9 @@ public class Level2 extends Level implements Screen{
 //        block17.draw(batch);
 //        block18.draw(batch);
 //        pig1.draw(batch);
-//        pig2.draw(batch);
-//        pig3.draw(batch);
-//        pig4.draw(batch);
+        pig2.draw(batch);
+        pig3.draw(batch);
+        pig4.draw(batch);
 //        if (bird1.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 10) resetBirdCompletely(bird1, 0);
 //        if (bird2.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 10) resetBirdCompletely(bird2, 1);
 //        if (bird3.getBirdBody().getPosition().y * Bird.PIXELS_TO_METERS < 10) resetBirdCompletely(bird3, 2);
@@ -758,6 +756,8 @@ public class Level2 extends Level implements Screen{
             anim.render(batch);
         }
         batch.end();
+
+        checkGameStatus();
 
         // Handle touch input for bird selection
         if (Gdx.input.justTouched()) {
@@ -781,6 +781,50 @@ public class Level2 extends Level implements Screen{
 
             if (currentBird != null) {
                 handleDragInput();
+            }
+        }
+    }
+
+    private void checkGameStatus() {
+        // Win page logic remains the same as previous version
+        boolean allPigsDead = true;
+        for (Pig pig : pigs) {
+            if (pig.getHealth() > 0) {
+                allPigsDead = false;
+                break;
+            }
+        }
+
+        if (allPigsDead) {
+            music_buff.stop();
+            game.setScreen(new WinPage(game));
+            return;
+        }
+
+        // Lose page logic with timer
+        if (currentBird == null && birdQueue.isEmpty()) {
+            allBirdsLaunched = true;
+        }
+
+        // If all birds launched, start timer
+        if (allBirdsLaunched) {
+            losePageTimer += Gdx.graphics.getDeltaTime();
+
+            // After delay, check pig health
+            if (losePageTimer >= LOSE_PAGE_DELAY) {
+                // Recheck pig health after delay
+                boolean anyPigAlive = false;
+                for (Pig pig : pigs) {
+                    if (pig.getHealth() > 0) {
+                        anyPigAlive = true;
+                        break;
+                    }
+                }
+
+                if (anyPigAlive) {
+                    music_buff.stop();
+                    game.setScreen(new LosePage(game));
+                }
             }
         }
     }
@@ -853,9 +897,9 @@ public class Level2 extends Level implements Screen{
 //        block17.dispose();
 //        block18.dispose();
 //        pig1.dispose();
-//        pig2.dispose();
-//        pig3.dispose();
-//        pig4.dispose();
+        pig2.dispose();
+        pig3.dispose();
+        pig4.dispose();
         for (CollisionDestruction anim : activeAnimations) {
             anim.dispose();
         }
