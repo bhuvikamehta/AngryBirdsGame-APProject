@@ -1,7 +1,7 @@
 # AngryBirds
 
 # About Game
-This project is a 3D physics based game implementation of the classic **Angry Birds** game, developed using Java, Gradle and LibGDX. 
+This project is a 2D physics based game implementation of the classic **Angry Birds** game, developed using Java, Gradle and LibGDX. 
 
 GitHub link- https://github.com/bhuvikamehta/AngryBirdsGame-APProject
 
